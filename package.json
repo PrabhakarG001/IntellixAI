@@ -1,0 +1,11 @@
+{
+  "name": "intellixai-root",
+  "private": true,
+  "scripts": {
+    "install": "cd Frontend && npm install",
+    "build": "cd Frontend && npm run build"
+  },
+  "devDependencies": {
+    "vite": "^7.2.7"
+  }
+}
