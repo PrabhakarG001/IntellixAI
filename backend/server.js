@@ -11,6 +11,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Backend API is running');
+});
+
 app.use('/api', chatRoutes);
 
 app.listen(PORT, () => {
