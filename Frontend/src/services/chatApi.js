@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://intellixai.onrender.com/api";
 
 export async function fetchChats() {
   const response = await fetch(`${API_BASE}/chats`);
