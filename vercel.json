@@ -1,3 +1,12 @@
 {
-  "outputDirectory": "Frontend/dist"
+  "version": 2,
+  "builds": [
+    {
+      "src": "Frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ]
 }
