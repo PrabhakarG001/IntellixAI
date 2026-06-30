@@ -1,0 +1,77 @@
+import * as z from "zod/v4";
+import { Result as SafeParseResult } from "../../types/fp.js";
+import { SDKValidationError } from "../errors/sdkvalidationerror.js";
+export type GetCreditsGlobals = {
+    /**
+     * The app identifier should be your app's URL and is used as the primary identifier for rankings.
+     *
+     * @remarks
+     * This is used to track API usage per application.
+     */
+    httpReferer?: string | undefined;
+    /**
+     * The app display name allows you to customize how your app appears in OpenRouter's dashboard.
+     *
+     * @remarks
+     */
+    appTitle?: string | undefined;
+    /**
+     * Comma-separated list of app categories (e.g. "cli-agent,cloud-agent"). Used for marketplace rankings.
+     *
+     * @remarks
+     */
+    appCategories?: string | undefined;
+};
+export type GetCreditsRequest = {
+    /**
+     * The app identifier should be your app's URL and is used as the primary identifier for rankings.
+     *
+     * @remarks
+     * This is used to track API usage per application.
+     */
+    httpReferer?: string | undefined;
+    /**
+     * The app display name allows you to customize how your app appears in OpenRouter's dashboard.
+     *
+     * @remarks
+     */
+    appTitle?: string | undefined;
+    /**
+     * Comma-separated list of app categories (e.g. "cli-agent,cloud-agent"). Used for marketplace rankings.
+     *
+     * @remarks
+     */
+    appCategories?: string | undefined;
+};
+export type GetCreditsData = {
+    /**
+     * Total credits purchased
+     */
+    totalCredits: number;
+    /**
+     * Total credits used
+     */
+    totalUsage: number;
+};
+/**
+ * Total credits purchased and used
+ */
+export type GetCreditsResponse = {
+    data: GetCreditsData;
+};
+/** @internal */
+export type GetCreditsRequest$Outbound = {
+    "HTTP-Referer"?: string | undefined;
+    appTitle?: string | undefined;
+    appCategories?: string | undefined;
+};
+/** @internal */
+export declare const GetCreditsRequest$outboundSchema: z.ZodType<GetCreditsRequest$Outbound, GetCreditsRequest>;
+export declare function getCreditsRequestToJSON(getCreditsRequest: GetCreditsRequest): string;
+/** @internal */
+export declare const GetCreditsData$inboundSchema: z.ZodType<GetCreditsData, unknown>;
+export declare function getCreditsDataFromJSON(jsonString: string): SafeParseResult<GetCreditsData, SDKValidationError>;
+/** @internal */
+export declare const GetCreditsResponse$inboundSchema: z.ZodType<GetCreditsResponse, unknown>;
+export declare function getCreditsResponseFromJSON(jsonString: string): SafeParseResult<GetCreditsResponse, SDKValidationError>;
+//# sourceMappingURL=getcredits.d.ts.map

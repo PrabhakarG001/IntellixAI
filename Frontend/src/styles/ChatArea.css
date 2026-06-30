@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* Layout & Container                        */
+
+
+.chat-empty-section {
+  @apply relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden;
+  @apply w-full max-w-full px-3 py-8 sm:px-6 md:px-8;
+}
+
+.chat-section {
+  @apply flex min-h-0 flex-1 flex-col relative w-full max-w-full;
+}
+
+/* Header & Logo                             */
+
+
+.chat-logo-container {
+  @apply mx-auto flex w-full max-w-2xl flex-col items-center justify-center text-center mt-[-22vh];
+}
+
+.chat-logo-wrapper {
+  @apply flex justify-center;
+}
+
+.chat-logo-img {
+  @apply h-48 sm:h-56 md:h-64 w-auto object-contain drop-shadow-2xl transition-all duration-300 hover:scale-105;
+}
+
+.chat-heading {
+  @apply mt-[-2rem] mb-12 text-2xl sm:text-3xl md:text-4xl font-light tracking-wide text-slate-800 transition-colors duration-300 dark:text-[#fff1f1] relative z-10 max-w-full;
+  overflow-wrap: anywhere;
+}
+
+/* Messages Area                             */
+
+
+.chat-scroll-area {
+  @apply min-h-0 flex-1 overflow-y-auto overflow-x-hidden relative;
+  @apply w-full max-w-full px-3 py-6 sm:px-6 md:px-8;
+  scrollbar-width: none;
+}
+
+.chat-scroll-area::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-messages-wrapper {
+  @apply mx-auto flex w-full max-w-full sm:max-w-4xl flex-col gap-5 sm:gap-6 pb-6;
+}
+
+/* Error Handling                            */
+
+
+.chat-error-container {
+  @apply flex items-center justify-between gap-2 sm:gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 sm:px-4 sm:py-3 text-sm text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-100 max-w-full;
+}
+
+.chat-error-text-wrapper {
+  @apply flex min-w-0 items-center gap-2;
+}
+
+.chat-error-text {
+  @apply min-w-0;
+}
+
+
+/* Input Area & Footer                       */
+
+
+.chat-input-wrapper-empty {
+  @apply w-full;
+}
+
+.chat-footer-section {
+  @apply shrink-0 px-2 pt-2 pb-4 sm:px-6 sm:pt-4 sm:pb-8 bg-transparent transition-colors duration-300;
+}
+
+.chat-footer-wrapper {
+  @apply mx-auto w-full max-w-full sm:max-w-4xl flex flex-col gap-2;
+}
+
+.chat-disclaimer-container-empty {
+  @apply absolute bottom-6 left-0 w-full px-4;
+}
+
+.chat-disclaimer-text {
+  @apply text-center text-xs text-slate-500 dark:text-slate-400;
+}
+
+
+/* Buttons                                   */
+
+
+.chat-sidebar-btn {
+  @apply absolute left-3 top-3 sm:left-4 sm:top-4 grid size-11 sm:size-10 place-items-center rounded-full text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white lg:hidden;
+}
+
+.chat-sidebar-btn-empty {
+  @apply z-10;
+}
+
+.chat-sidebar-btn-active {
+  @apply z-20;
+}
+
+.chat-scroll-down-btn {
+  @apply absolute bottom-[6rem] left-1/2 z-10 -translate-x-1/2 grid size-9 place-items-center rounded-full border border-slate-200 bg-white/90 text-slate-600 shadow-xl backdrop-blur-md transition hover:bg-slate-50 hover:text-slate-900 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
+}
+
+.chat-error-retry-btn {
+  @apply flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-rose-200/50 px-3 text-xs font-semibold hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-200/20 dark:hover:bg-rose-200/10;
+}
+
+
+/* Animations                                */
+
+
+.thinking-live::before {
+  position: absolute;
+  inset: -40%;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 211, 238, 0.18),
+    transparent
+  );
+  animation: thinking-sweep 2.4s linear infinite;
+}
+
+.thinking-live > * {
+  position: relative;
+  z-index: 1;
+}
+
+.thinking-dot {
+  animation: thinking-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes thinking-sweep {
+  from {
+    transform: translateX(-45%) rotate(8deg);
+  }
+
+  to {
+    transform: translateX(45%) rotate(8deg);
+  }
+}
+
+@keyframes thinking-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}

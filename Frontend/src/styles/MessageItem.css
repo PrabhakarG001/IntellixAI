@@ -1,0 +1,317 @@
+@import "tailwindcss";
+
+/* Layout & Bubbles                          */
+
+
+.message-item-container {
+  @apply flex gap-3 min-w-0 max-w-full;
+}
+
+.message-item-user {
+  @apply justify-end;
+}
+
+.message-item-bot {
+  @apply justify-start;
+}
+
+.message-bubble-base {
+  @apply rounded-2xl border px-3 py-3 sm:px-6 sm:py-5 text-sm leading-relaxed shadow-xl transition-colors duration-300;
+}
+
+.message-bubble-user {
+  @apply max-w-[95%] sm:max-w-[65%];
+  @apply border-slate-900 bg-slate-900 text-white break-words;
+  @apply dark:border-[#6f00ff] dark:bg-[#6f00ff] dark:text-[#fff1f1];
+  word-break: break-word;
+}
+
+.message-bubble-bot {
+  @apply max-w-[95%] sm:max-w-[80%] backdrop-blur-[12px] break-words;
+  @apply bg-white/70 text-slate-800;
+  @apply dark:bg-white/[0.03] dark:text-[#e3e3e3] dark:border-white/[0.08];
+  word-break: break-word;
+}
+
+.message-bubble-error {
+  @apply border-rose-300 dark:border-rose-400/25;
+}
+
+.message-bubble-normal {
+  @apply border-slate-200;
+}
+
+
+/* Headers & Icons                           */
+
+
+.message-bot-icon {
+  @apply mt-1 grid size-9 shrink-0 place-items-center rounded-2xl border;
+  @apply border-cyan-200 bg-cyan-100 text-cyan-600;
+  @apply dark:border-[#e9b3fb]/20 dark:bg-[#e9b3fb]/10 dark:text-[#e9b3fb];
+}
+
+.message-user-icon {
+  @apply mt-1 grid size-9 shrink-0 place-items-center rounded-2xl border;
+  @apply border-slate-200 bg-slate-100 text-slate-600;
+  @apply dark:border-white/10 dark:bg-white/[0.08] dark:text-[#fff1f1];
+}
+
+.message-bot-header {
+  @apply mb-3 flex items-center justify-between gap-2 sm:gap-3 border-b pb-2 min-w-0;
+  @apply text-xs font-semibold uppercase tracking-[0.18em];
+  @apply border-slate-200 text-cyan-600;
+  @apply dark:border-white/[0.04] dark:text-[#e9b3fb];
+}
+
+
+/* Actions & Buttons                         */
+
+
+.message-actions-container {
+  @apply flex items-center gap-1 normal-case tracking-normal;
+}
+
+.message-action-btn-base {
+  @apply grid h-11 w-11 sm:size-7 place-items-center rounded-full transition-colors duration-200;
+}
+
+.message-action-copy-base {
+  @apply grid h-11 w-11 sm:size-7 place-items-center rounded-full transition-colors duration-200;
+  @apply disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.message-action-copied {
+  @apply bg-emerald-100 text-emerald-600 dark:bg-green-500/20 dark:text-green-400;
+}
+
+.message-action-default {
+  @apply text-slate-400 hover:bg-slate-200 hover:text-cyan-600;
+  @apply dark:hover:bg-white/10 dark:hover:text-[#e9b3fb];
+}
+
+.message-loading-container {
+  @apply flex h-6 items-center justify-center pt-2;
+}
+
+.message-user-text {
+  @apply whitespace-pre-wrap break-words leading-relaxed;
+  word-break: break-word;
+}
+
+
+/* Markdown Typography                       */
+
+
+.md-h1 {
+  @apply mb-4 mt-6 text-2xl font-bold leading-tight;
+  @apply bg-gradient-to-r from-cyan-600 to-fuchsia-600 bg-clip-text text-transparent;
+  @apply dark:from-[#6f00ff] dark:to-[#e9b3fb];
+}
+
+.md-h2 {
+  @apply mb-3 mt-5 text-xl font-semibold leading-snug;
+  @apply text-cyan-700 dark:text-[#fff1f1];
+}
+
+.md-h3 {
+  @apply mb-2 mt-4 text-lg font-medium leading-snug;
+  @apply text-cyan-600 dark:text-[#e9b3fb];
+}
+
+.md-p {
+  @apply mb-4 leading-relaxed last:mb-0;
+  @apply text-slate-700 dark:text-[#fff1f1];
+  overflow-wrap: anywhere;
+}
+
+.md-strong {
+  @apply font-semibold;
+  @apply text-slate-900 dark:text-[#fff1f1];
+}
+
+/* Lists */
+.md-ul {
+  @apply mb-4 ml-1 space-y-2;
+}
+
+.md-ol {
+  @apply mb-4 ml-5 list-decimal space-y-2;
+  @apply text-slate-700 marker:font-semibold marker:text-cyan-600;
+  @apply dark:text-[#fff1f1] dark:marker:text-[#6f00ff];
+}
+
+.md-li {
+  @apply flex items-start gap-3;
+  @apply text-slate-700 dark:text-[#fff1f1];
+}
+
+.md-li-task {
+  @apply flex items-start gap-2;
+  @apply text-slate-700 dark:text-[#fff1f1];
+}
+
+.md-li-icon {
+  @apply mt-1 shrink-0;
+  @apply text-cyan-500 dark:text-[#6f00ff];
+}
+
+.md-li-content {
+  @apply flex-1 min-w-0;
+  overflow-wrap: anywhere;
+}
+
+/* Markdown Alerts (Tips, Warnings, etc)     */
+
+
+.md-alert-base {
+  @apply my-5 flex gap-3 sm:gap-4 rounded-2xl border p-3 sm:p-4 shadow-md dark:shadow-lg min-w-0;
+}
+
+.md-alert-tip {
+  @apply border-cyan-300 bg-cyan-50;
+  @apply dark:border-[#6f00ff]/30 dark:bg-[#6f00ff]/10 dark:shadow-[0_0_20px_rgba(111,0,255,0.1)];
+}
+
+.md-alert-tip-icon {
+  @apply mt-0.5 shrink-0 text-cyan-600 dark:text-[#e9b3fb];
+}
+
+.md-alert-tip-text {
+  @apply text-sm text-cyan-900 dark:text-[#fff1f1] min-w-0;
+  overflow-wrap: anywhere;
+}
+
+.md-alert-warning {
+  @apply border-rose-300 bg-rose-50;
+  @apply dark:border-rose-400/30 dark:bg-rose-500/10 dark:shadow-rose-900/20;
+}
+
+.md-alert-warning-icon {
+  @apply mt-0.5 shrink-0 text-rose-500 dark:text-rose-300;
+}
+
+.md-alert-warning-text {
+  @apply text-sm text-rose-900 dark:text-[#fff1f1] min-w-0;
+  overflow-wrap: anywhere;
+}
+
+.md-alert-success {
+  @apply border-emerald-300 bg-emerald-50;
+  @apply dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:shadow-emerald-900/20;
+}
+
+.md-alert-success-icon {
+  @apply mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400;
+}
+
+.md-alert-success-text {
+  @apply text-sm text-emerald-900 dark:text-[#fff1f1] min-w-0;
+  overflow-wrap: anywhere;
+}
+
+.md-blockquote {
+  @apply my-5 flex gap-3 sm:gap-4 rounded-2xl border-l-4 p-3 sm:p-4 italic shadow-sm dark:shadow-md min-w-0;
+  @apply border-fuchsia-500/50 bg-fuchsia-50/50 text-slate-700;
+  @apply dark:border-[#6f00ff]/50 dark:bg-[#6f00ff]/10 dark:text-[#e9b3fb];
+}
+
+.md-blockquote-icon {
+  @apply mt-0.5 shrink-0 text-fuchsia-500 dark:text-[#e9b3fb];
+}
+
+.md-blockquote-text {
+  @apply text-sm text-slate-700 dark:text-[#e9b3fb] min-w-0;
+  overflow-wrap: anywhere;
+}
+
+
+/* Markdown Tables                           */
+
+
+.md-table-container {
+  @apply my-6 w-full max-w-full overflow-x-auto rounded-xl border shadow-sm dark:shadow-lg;
+  @apply border-slate-200 dark:border-white/10;
+}
+
+.md-table {
+  @apply w-full min-w-[300px] border-collapse text-left text-sm;
+  @apply text-slate-700 dark:text-[#fff1f1];
+}
+
+.md-thead {
+  @apply border-b border-slate-200 bg-slate-50 text-cyan-800;
+  @apply dark:border-white/10 dark:bg-[#3b0270] dark:text-[#e9b3fb];
+}
+
+.md-tbody {
+  @apply divide-y divide-slate-200 bg-white;
+  @apply dark:divide-white/5 dark:bg-[#190130]/50;
+}
+
+.md-tr {
+  @apply transition-colors hover:bg-slate-50/50 dark:hover:bg-white/[0.02];
+}
+
+.md-th {
+  @apply px-2 py-2 sm:px-4 sm:py-3 text-xs font-semibold uppercase tracking-wider;
+}
+
+.md-td {
+  @apply px-2 py-2 sm:px-4 sm:py-3;
+}
+
+
+/* Markdown Code Blocks                      */
+
+
+.md-code-inline {
+  @apply rounded-md border px-1.5 py-0.5 font-mono text-[12px] sm:text-[13px];
+  @apply border-slate-200 bg-slate-100 text-cyan-700;
+  @apply dark:border-white/10 dark:bg-white/[0.06] dark:text-[#e9b3fb];
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.code-block-container {
+  @apply my-5 overflow-hidden rounded-2xl border shadow-sm dark:shadow-xl max-w-full min-w-0;
+  @apply border-slate-200 bg-slate-50;
+  @apply dark:border-white/10 dark:bg-[#190130];
+}
+
+.code-block-header {
+  @apply flex items-center justify-between border-b px-2 py-2 sm:px-4 text-xs font-semibold gap-1;
+  @apply border-slate-200 bg-slate-100 text-slate-600;
+  @apply dark:border-white/10 dark:bg-[#3b0270] dark:text-[#e9b3fb];
+}
+
+.code-block-lang-wrapper {
+  @apply flex items-center gap-2;
+}
+
+.code-block-lang-icon {
+  @apply text-cyan-600 dark:text-[#6f00ff];
+}
+
+.code-block-lang-text {
+  @apply uppercase tracking-wider text-cyan-800 dark:text-[#fff1f1];
+}
+
+.code-block-copy-btn {
+  @apply flex items-center gap-1 sm:gap-1.5 rounded-md px-1.5 py-1 sm:px-2.5 sm:py-1.5 transition-colors duration-200 shrink-0 text-[11px] sm:text-xs;
+}
+
+.code-block-copy-default {
+  @apply text-slate-500 hover:bg-slate-200 hover:text-cyan-700;
+  @apply dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-[#e9b3fb];
+}
+
+.code-block-copy-success {
+  @apply bg-emerald-100 text-emerald-600;
+  @apply dark:bg-green-500/15 dark:text-green-400;
+}
+
+.code-block-pre {
+  @apply overflow-x-auto p-2 sm:p-4 font-mono text-[11px] sm:text-[13px] leading-5 sm:leading-6 max-w-full;
+  @apply text-slate-800 dark:text-[#fff1f1];
+}

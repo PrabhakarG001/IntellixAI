@@ -1,0 +1,67 @@
+.triangular-loader {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  animation: spin 3s linear infinite;
+  display: inline-block;
+}
+
+.triangular-loader .dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #6f00ff; /* Purple/Cyan brand colors */
+  animation: pulse 1.5s cubic-bezier(0.2, 0, 0, 1) infinite;
+}
+
+.dark .triangular-loader .dot {
+  background-color: #e9b3fb;
+}
+
+/* Position dots in an equilateral triangle */
+.triangular-loader .dot-1 {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0s;
+}
+
+.triangular-loader .dot-2 {
+  bottom: 0;
+  left: 0;
+  animation-delay: 0.5s;
+}
+
+.triangular-loader .dot-3 {
+  bottom: 0;
+  right: 0;
+  animation-delay: 1s;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .triangular-loader {
+    animation: none;
+  }
+  .triangular-loader .dot {
+    animation: none;
+    opacity: 0.8;
+  }
+}

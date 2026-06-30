@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+/* ========================================= */
+/* Layout & Container                        */
+/* ========================================= */
+
+.sidebar-overlay {
+  @apply fixed inset-0 z-30;
+  @apply bg-slate-950/70 backdrop-blur-sm;
+  @apply lg:hidden;
+}
+
+.sidebar-container {
+  @apply fixed inset-y-0 left-0 z-40 lg:static;
+  @apply flex flex-col w-[280px] max-w-[85vw];
+  @apply bg-transparent dark:bg-transparent;
+  @apply border-r border-slate-200/50 dark:border-[#A855F7]/30;
+  @apply shadow-[1px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[1px_0_6px_rgba(168,85,247,0.3)];
+  @apply backdrop-blur-xl dark:backdrop-blur-[2px];
+  @apply transition-all duration-300 ease-out;
+  @apply lg:translate-x-0;
+}
+
+/* ========================================= */
+/* Header & Branding                         */
+/* ========================================= */
+
+.sidebar-header {
+  @apply flex h-16 items-center gap-3 px-3 pt-2;
+}
+
+.sidebar-logo {
+  @apply grid size-10 shrink-0 place-items-center rounded-full;
+  @apply bg-slate-900 text-white shadow-md;
+  @apply dark:bg-transparent dark:text-[#e9b3fb] dark:shadow-[0_0_30px_rgba(233,179,251,0.18)];
+}
+
+.sidebar-brand-text {
+  @apply truncate text-xl font-bold tracking-wide;
+  @apply text-slate-900 dark:text-[#fff1f1];
+}
+
+/* ========================================= */
+/* Navigation & Buttons                      */
+/* ========================================= */
+
+.sidebar-rail-item {
+  @apply relative grid size-10 place-items-center rounded-full;
+  @apply text-slate-500 dark:text-[#fff1f1];
+  @apply hover:bg-slate-200 hover:text-slate-900;
+  @apply dark:hover:bg-white/10 dark:hover:text-[#e9b3fb];
+}
+
+.sidebar-new-chat-btn {
+  @apply flex h-11 w-full items-center gap-3 rounded-xl;
+  @apply bg-slate-900 text-sm font-semibold text-white shadow-lg hover:bg-slate-800;
+  @apply dark:bg-[#A855F7] dark:text-[#fff1f1] dark:shadow-[0_0_30px_rgba(168,85,247,0.4)] dark:hover:bg-[#A855F7]/80;
+}
+
+.sidebar-close-btn {
+  @apply grid size-9 place-items-center rounded-full transition lg:hidden;
+  @apply text-slate-500 dark:text-slate-400;
+  @apply hover:bg-slate-200 hover:text-slate-900;
+  @apply dark:hover:bg-white/10 dark:hover:text-white;
+}
+
+.sidebar-tooltip {
+  @apply pointer-events-none absolute left-[calc(100%+14px)] z-50;
+  @apply flex items-center whitespace-nowrap rounded-lg px-3 py-1.5;
+  @apply text-xs font-semibold tracking-wide opacity-0 shadow-xl backdrop-blur-xl;
+  @apply transition-all duration-300 ease-out translate-x-[-10px];
+  @apply group-hover:translate-x-0 group-hover:opacity-100;
+  @apply bg-white/90 text-slate-800;
+  @apply dark:bg-[#1a0f2e]/95 dark:text-[#fff1f1] dark:shadow-[0_4px_24px_rgba(168,85,247,0.25)] dark:border dark:border-white/10;
+}
+
+/* ========================================= */
+/* Search Area                               */
+/* ========================================= */
+
+.sidebar-top-bar {
+  @apply sticky top-0 z-10 space-y-3 px-3 py-3;
+  @apply bg-white/10 backdrop-blur-md border-y border-slate-200;
+  @apply dark:bg-transparent dark:backdrop-blur-sm dark:border-white/[0.06];
+}
+
+.sidebar-search-label {
+  @apply flex h-11 items-center gap-3 rounded-xl px-3;
+  @apply bg-white border border-slate-200 text-slate-400;
+  @apply focus-within:border-slate-400 focus-within:text-slate-600;
+  @apply dark:bg-white/[0.02] dark:border-white/10 dark:text-[#9CA3AF];
+  @apply dark:focus-within:border-[#A855F7]/50 dark:focus-within:text-[#e9b3fb];
+}
+
+.sidebar-search-input {
+  @apply min-w-0 flex-1 outline-none text-sm bg-transparent;
+  @apply text-slate-900 placeholder:text-slate-400;
+  @apply dark:text-[#fff1f1] dark:placeholder:text-slate-500;
+}
+
+
+/* Chat List                                 */
+
+
+.sidebar-group-label {
+  @apply mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.2em];
+  @apply text-slate-400 dark:text-slate-500;
+}
+
+.sidebar-chat-btn {
+  @apply flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 text-left;
+}
+
+.sidebar-chat-btn-active {
+  @apply border-slate-200 bg-slate-100 text-slate-900 shadow-sm;
+  @apply dark:border-[#A855F7]/40 dark:bg-[#A855F7]/20 dark:text-[#fff1f1] dark:shadow-[0_0_22px_rgba(168,85,247,0.2)];
+}
+
+.sidebar-chat-btn-inactive {
+  @apply border-transparent text-slate-600;
+  @apply hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900;
+  @apply dark:text-slate-300 dark:hover:border-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white;
+}
+
+.sidebar-chat-input {
+  @apply w-full bg-transparent text-sm font-medium outline-none;
+  @apply text-slate-900 dark:text-white;
+}
+
+.sidebar-chat-date {
+  @apply block truncate text-xs;
+  @apply text-slate-400 dark:text-slate-500;
+}
+
+.sidebar-action-btn {
+  @apply grid size-7 place-items-center rounded-full;
+  @apply text-slate-400 dark:text-slate-400;
+  @apply hover:bg-slate-200 hover:text-slate-900;
+  @apply dark:hover:bg-white/10 dark:hover:text-[#e9b3fb];
+}
+
+.sidebar-delete-btn {
+  @apply grid size-7 place-items-center rounded-full transition-colors;
+  @apply text-slate-400;
+  @apply hover:bg-rose-100 hover:text-rose-600;
+  @apply dark:hover:bg-rose-500/10 dark:hover:text-rose-300;
+}
+
+
+/* User Profile & Footer                     */
+
+
+.sidebar-footer {
+  @apply space-y-1 border-t p-3;
+  @apply border-slate-200 dark:border-white/[0.06];
+}
+
+.sidebar-user-container {
+  @apply flex h-12 items-center gap-3 rounded-xl px-3 text-sm;
+  @apply text-slate-600 dark:text-slate-300;
+}
+
+.sidebar-user-name {
+  @apply block truncate text-sm font-medium;
+  @apply text-slate-900 dark:text-[#fff1f1];
+}
+
+.sidebar-user-role {
+  @apply flex items-center gap-1.5 text-xs;
+  @apply text-slate-500 dark:text-[#9CA3AF];
+}
+
+.sidebar-user-dot {
+  @apply size-1.5 rounded-full shadow-sm;
+  @apply bg-slate-900 dark:bg-[#A855F7] dark:shadow-[0_0_12px_rgba(168,85,247,0.85)];
+}
+
+.sidebar-profile-btn {
+  @apply relative grid size-10 place-items-center rounded-full transition border;
+  @apply border-fuchsia-200 bg-fuchsia-100 text-fuchsia-600 hover:bg-fuchsia-200;
+  @apply dark:border-fuchsia-300/25 dark:bg-fuchsia-400/20 dark:text-fuchsia-100 dark:hover:bg-fuchsia-400/30;
+}
+
+.sidebar-collapse-btn {
+  @apply flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium;
+  @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  @apply dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white;
+}
