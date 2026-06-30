@@ -1,0 +1,7 @@
+{
+  "name": "intellixai-root",
+  "private": true,
+  "scripts": {
+    "build": "cd Frontend && npm install && npm run build"
+  }
+}
