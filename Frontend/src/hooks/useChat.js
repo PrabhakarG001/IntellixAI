@@ -19,16 +19,14 @@ const fallbackChats = [
   },
 ];
 
-export function useChat({ selectedModel }) {
+export function useChat({ selectedModel, user }) {
   const [chats, setChats] = useState(fallbackChats);
   const [activeChatId, setActiveChatId] = useState(fallbackChats[0].id);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const abortRef = useRef(null);
 
-  useEffect(() => {
-    loadChats();
-  }, []);
+
 
   const activeChat = useMemo(
     () => chats.find((chat) => chat.id === activeChatId) ?? chats[0] ?? null,
@@ -52,6 +50,17 @@ export function useChat({ selectedModel }) {
       setError(loadError.message);
     }
   }, []);
+
+  useEffect(() => {
+    if (user?.uid) {
+      setChats(fallbackChats);
+      setActiveChatId(fallbackChats[0].id);
+      loadChats();
+    } else {
+      setChats(fallbackChats);
+      setActiveChatId(fallbackChats[0].id);
+    }
+  }, [user?.uid, loadChats]);
 
   const startNewChat = useCallback(async () => {
     try {
@@ -159,7 +168,9 @@ export function useChat({ selectedModel }) {
   const upsertChat = useCallback((chat) => {
     setChats((current) => {
       const exists = current.some((item) => item.id === chat.id);
-      if (!exists) return [chat, ...current];
+      if (!exists) {
+        return [chat, ...current.filter(c => c.id !== fallbackChats[0].id)];
+      }
       return current.map((item) => (item.id === chat.id ? chat : item));
     });
   }, []);
@@ -185,7 +196,8 @@ export function useChat({ selectedModel }) {
       if (!trimmed || isGenerating || !activeChat) return;
 
       const controller = new AbortController();
-      const chatId = activeChat.id;
+      const isFallback = activeChat.id === fallbackChats[0].id;
+      const chatId = isFallback ? crypto.randomUUID() : activeChat.id;
       const userMessage = {
         id: crypto.randomUUID(),
         role: "user",
@@ -202,9 +214,14 @@ export function useChat({ selectedModel }) {
       abortRef.current = controller;
       setIsGenerating(true);
       setError("");
+      
+      if (isFallback) {
+        setActiveChatId(chatId);
+      }
+      
       upsertChat(
         buildOptimisticChat({
-          chat: activeChat,
+          chat: { ...activeChat, id: chatId },
           userMessage,
           assistantMessage,
           regenerate,

@@ -45,3 +45,42 @@ textarea {
 button {
   cursor: pointer;
 }
+
+/* Hidden scrollbar utility */
+.hidden-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hidden-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Styled scrollbar for code blocks */
+.darkveil-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
+}
+.darkveil-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.darkveil-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.darkveil-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 3px;
+}
+
+/* Streaming cursor blink */
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  animation: cursor-blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

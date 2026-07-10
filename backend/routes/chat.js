@@ -7,6 +7,7 @@ import {
   createStreamClassifier,
   getNvidiaModel,
 } from "../utils/Nvidia.js";
+import { verifyUser } from "../utils/auth.js";
 
 const router = express.Router();
 
@@ -18,13 +19,13 @@ const providerModels = {
     "deepseek/deepseek-r1-distill-llama-70b",
 };
 
-router.get("/chats", async (_req, res) => {
-  const chats = await Thread.all();
+router.get("/chats", verifyUser, async (req, res) => {
+  const chats = await Thread.all(req.user.uid);
   res.json({ chats: chats.map((chat) => chat.toClient()) });
 });
 
-router.get("/chat/:id", async (req, res) => {
-  const chat = await Thread.findById(req.params.id);
+router.get("/chat/:id", verifyUser, async (req, res) => {
+  const chat = await Thread.findById(req.params.id, req.user.uid);
 
   if (!chat) {
     return res.status(404).json({ error: "Chat not found." });
@@ -33,19 +34,20 @@ router.get("/chat/:id", async (req, res) => {
   res.json({ chat: chat.toClient() });
 });
 
-router.post("/new-chat", async (_req, res) => {
-  const chat = await Thread.create({ title: "New chat", messages: [] });
+router.post("/new-chat", verifyUser, async (req, res) => {
+  const chat = await Thread.create({ userId: req.user.uid, title: "New chat", messages: [] });
   res.status(201).json({ chat: chat.toClient() });
 });
 
-router.delete("/chat/:id", async (req, res) => {
-  await Thread.delete(req.params.id);
+router.delete("/chat/:id", verifyUser, async (req, res) => {
+  await Thread.delete(req.params.id, req.user.uid);
   res.json({ ok: true });
 });
 
-router.post("/chat/:id/clear", async (req, res) => {
+router.post("/chat/:id/clear", verifyUser, async (req, res) => {
   const chat = await Thread.upsert({
     id: req.params.id,
+    userId: req.user.uid,
     title: "New chat",
     messages: [],
   });
@@ -53,11 +55,11 @@ router.post("/chat/:id/clear", async (req, res) => {
   res.json({ chat: chat.toClient() });
 });
 
-router.post("/chat", async (req, res) => {
+router.post("/chat", verifyUser, async (req, res) => {
   try {
-    const request = await buildChatRequest(req.body);
+    const request = await buildChatRequest(req.body, req.user.uid);
     const result = await generateCompleteResponse(request);
-    const chat = await saveConversation(request, result);
+    const chat = await saveConversation(request, result, req.user.uid);
 
     res.json({
       chat: chat.toClient(),
@@ -76,7 +78,7 @@ router.post("/chat", async (req, res) => {
   }
 });
 
-router.post("/chat/stream", async (req, res) => {
+router.post("/chat/stream", verifyUser, async (req, res) => {
   let stream;
   let request;
   const classifier = createStreamClassifier();
@@ -84,7 +86,7 @@ router.post("/chat/stream", async (req, res) => {
   let assistantThought = "";
 
   try {
-    request = await buildChatRequest(req.body);
+    request = await buildChatRequest(req.body, req.user.uid);
     res.status(200);
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -131,7 +133,7 @@ router.post("/chat/stream", async (req, res) => {
     const chat = await saveConversation(request, {
       content: assistantContent,
       thought: assistantThought,
-    });
+    }, req.user.uid);
 
     sendSse(res, { type: "done", chat: chat.toClient() });
     res.end();
@@ -155,12 +157,12 @@ router.post("/chat/stream", async (req, res) => {
   }
 });
 
-async function buildChatRequest(body = {}) {
+async function buildChatRequest(body = {}, userId) {
   const message = String(body.message || "").trim();
   const requestedModel = normalizeModel(body.model);
   const thinkingMode = normalizeThinkingMode(body.thinkingMode, body.thinking);
   const chatId = String(body.chatId || randomUUID());
-  const existingChat = await Thread.findById(chatId);
+  const existingChat = await Thread.findById(chatId, userId);
   const previousMessages = existingChat?.messages || normalizeMessages(body.messages);
 
   if (!message) {
@@ -212,9 +214,10 @@ async function generateCompleteResponse(request) {
   };
 }
 
-async function saveConversation(request, assistant) {
+async function saveConversation(request, assistant, userId) {
   return Thread.upsert({
     id: request.chatId,
+    userId,
     title: titleFromMessages(request.messages),
     messages: [
       ...request.messages,

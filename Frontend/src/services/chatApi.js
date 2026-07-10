@@ -1,31 +1,50 @@
+import { auth } from "./firebase.js";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://intellixai.onrender.com/api";
 
+async function getAuthHeaders(existingHeaders = {}) {
+  const headers = { ...existingHeaders };
+  if (auth.currentUser) {
+    const token = await auth.currentUser.getIdToken();
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+
 export async function fetchChats() {
-  const response = await fetch(`${API_BASE}/chats`);
+  const response = await fetch(`${API_BASE}/chats`, { 
+    headers: await getAuthHeaders(),
+    cache: "no-store" 
+  });
   if (!response.ok) throw new Error("Unable to load chats.");
   return response.json();
 }
 
 export async function fetchChatById(chatId) {
-  const response = await fetch(`${API_BASE}/chat/${chatId}`);
+  const response = await fetch(`${API_BASE}/chat/${chatId}`, { 
+    headers: await getAuthHeaders(),
+    cache: "no-store"
+  });
   if (!response.ok) throw new Error("Unable to load this search thread.");
   return response.json();
 }
 
 export async function createChat() {
-  const response = await fetch(`${API_BASE}/new-chat`, { method: "POST" });
+  const response = await fetch(`${API_BASE}/new-chat`, { method: "POST", headers: await getAuthHeaders() });
   if (!response.ok) throw new Error("Unable to create a new chat.");
   return response.json();
 }
 
 export async function deleteChatById(chatId) {
-  const response = await fetch(`${API_BASE}/chat/${chatId}`, { method: "DELETE" });
+  const response = await fetch(`${API_BASE}/chat/${chatId}`, { method: "DELETE", headers: await getAuthHeaders() });
   if (!response.ok) throw new Error("Unable to delete this search.");
 }
 
 export async function clearChatById(chatId) {
   const response = await fetch(`${API_BASE}/chat/${chatId}/clear`, {
     method: "POST",
+    headers: await getAuthHeaders(),
   });
   if (!response.ok) throw new Error("Unable to clear chat.");
   return response.json();
@@ -40,7 +59,7 @@ export async function streamChatMessage({
 }) {
   const response = await fetch(`${API_BASE}/chat/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await getAuthHeaders({ "Content-Type": "application/json" }),
     signal,
     body: JSON.stringify({
       chatId,

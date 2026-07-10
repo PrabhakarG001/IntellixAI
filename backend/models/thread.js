@@ -1,74 +1,70 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import mongoose from "mongoose";
 import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dataDir = path.resolve(__dirname, "../data");
-const storePath = path.join(dataDir, "threads.json");
+const MessageSchema = new mongoose.Schema({
+  id: { type: String, required: true, default: () => randomUUID() },
+  role: { type: String, enum: ["user", "assistant"], required: true },
+  content: { type: String, required: true },
+  thought: { type: String, default: "" },
+});
+
+const ThreadSchema = new mongoose.Schema({
+  id: { type: String, required: true, index: true },
+  userId: { type: String, required: true, index: true },
+  title: { type: String, default: "New chat" },
+  messages: { type: [MessageSchema], default: [] },
+}, {
+  timestamps: true // adds createdAt and updatedAt
+});
+
+// Avoid OverwriteModelError
+const ThreadModel = mongoose.models.Thread || mongoose.model("Thread", ThreadSchema);
 
 export class Thread {
-  constructor({
-    id,
-    title = "New chat",
-    createdAt = new Date(),
-    updatedAt = new Date(),
-    messages = [],
-  }) {
-    if (!id) {
-      throw new Error("Thread id is required.");
-    }
-
-    this.id = String(id);
-    this.title = sanitizeTitle(title);
-    this.createdAt = new Date(createdAt).toISOString();
-    this.updatedAt = new Date(updatedAt).toISOString();
-    this.messages = normalizeMessages(messages);
+  constructor(doc) {
+    this.id = doc.id;
+    this.userId = doc.userId;
+    this.title = doc.title;
+    this.createdAt = doc.createdAt;
+    this.updatedAt = doc.updatedAt;
+    this.messages = doc.messages || [];
   }
 
-  static async all() {
-    const threads = await readThreads();
-    return threads.map((thread) => new Thread(thread));
+  static async all(userId) {
+    const docs = await ThreadModel.find({ userId }).sort({ updatedAt: -1 }).lean();
+    return docs.map(doc => new Thread(doc));
   }
 
-  static async findById(id) {
-    const threads = await readThreads();
-    const thread = threads.find((item) => item.id === id);
-    return thread ? new Thread(thread) : null;
+  static async findById(id, userId) {
+    const doc = await ThreadModel.findOne({ id, userId }).lean();
+    return doc ? new Thread(doc) : null;
   }
 
-  static async upsert({ id, title, messages }) {
-    const threads = await readThreads();
-    const existingIndex = threads.findIndex((item) => item.id === id);
-    const existing = existingIndex >= 0 ? threads[existingIndex] : null;
+  static async upsert({ id, userId, title, messages }) {
     const normalizedMessages = normalizeMessages(messages);
-    const thread = new Thread({
-      id,
-      title: title || existing?.title || titleFromMessages(normalizedMessages),
-      createdAt: existing?.createdAt || new Date(),
-      updatedAt: new Date(),
+    const updateData = {
       messages: normalizedMessages,
-    });
+    };
+    
+    // Only update title if provided or if it's a new chat, else derive from messages
+    if (title) updateData.title = sanitizeTitle(title);
+    else updateData.title = titleFromMessages(normalizedMessages);
 
-    if (existingIndex >= 0) {
-      threads[existingIndex] = thread;
-    } else {
-      threads.unshift(thread);
-    }
-
-    await writeThreads(threads);
-    return thread;
+    const doc = await ThreadModel.findOneAndUpdate(
+      { id, userId },
+      { $set: updateData, $setOnInsert: { id, userId } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).lean();
+    
+    return new Thread(doc);
   }
 
-  static async create({ id = randomUUID(), title = "New chat", messages = [] } = {}) {
-    return Thread.upsert({ id, title, messages });
+  static async create({ id = randomUUID(), userId, title = "New chat", messages = [] } = {}) {
+    return Thread.upsert({ id, userId, title, messages });
   }
 
-  static async delete(id) {
-    const threads = await readThreads();
-    const nextThreads = threads.filter((thread) => thread.id !== id);
-    await writeThreads(nextThreads);
+  static async delete(id, userId) {
+    await ThreadModel.deleteOne({ id, userId });
   }
 
   async save() {
@@ -78,12 +74,13 @@ export class Thread {
   toClient() {
     return {
       id: this.id,
+      userId: this.userId,
       title: this.title,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      updatedAtLabel: formatRelativeTime(this.updatedAt),
+      createdAt: this.createdAt ? new Date(this.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: this.updatedAt ? new Date(this.updatedAt).toISOString() : new Date().toISOString(),
+      updatedAtLabel: formatRelativeTime(this.updatedAt || new Date()),
       messages: this.messages.map((message, index) => ({
-        id: `${this.id}-${index}`,
+        id: message.id || `${this.id}-${index}`,
         role: message.role,
         content: message.content,
         thought: message.thought || "",
@@ -107,6 +104,7 @@ export function normalizeMessages(messages) {
     })
     .map((message) => {
       const normalized = {
+        id: message.id || randomUUID(),
         role: message.role,
         content: String(message.content ?? message.text),
       };
@@ -158,20 +156,4 @@ function formatRelativeTime(value) {
     month: "short",
     day: "numeric",
   });
-}
-
-async function readThreads() {
-  try {
-    const raw = await fs.readFile(storePath, "utf8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    if (error.code === "ENOENT") return [];
-    throw error;
-  }
-}
-
-async function writeThreads(threads) {
-  await fs.mkdir(dataDir, { recursive: true });
-  await fs.writeFile(storePath, JSON.stringify(threads, null, 2));
 }

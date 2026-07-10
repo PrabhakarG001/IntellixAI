@@ -1,0 +1,224 @@
+.input-box-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 32px;
+  padding: 1.5px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 500ms;
+}
+.input-box-wrapper:focus-within {
+  box-shadow: 0 12px 40px rgba(168, 85, 247, 0.2);
+}
+.dark .input-box-wrapper {
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.5);
+}
+.dark .input-box-wrapper:focus-within {
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.4);
+}
+
+.input-box-animated-border {
+  position: absolute;
+  top: -100%;
+  right: -100%;
+  bottom: -100%;
+  left: -100%;
+  animation: spin 4s linear infinite;
+  background-image: conic-gradient(from 90deg at 50% 50%, transparent 0%, transparent 75%, #A855F7 100%);
+  opacity: 0.7;
+  transition: opacity 500ms;
+}
+.group\/input:focus-within .input-box-animated-border {
+  opacity: 0;
+}
+.dark .input-box-animated-border {
+  opacity: 1;
+}
+.dark .group\/input:focus-within .input-box-animated-border {
+  opacity: 0;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.input-box-solid-border {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #A855F7;
+  opacity: 0;
+  transition: opacity 500ms;
+}
+.group\/input:focus-within .input-box-solid-border {
+  opacity: 1;
+}
+
+.input-box-inner {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  border-radius: calc(32px - 1.5px);
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 6px;
+  backdrop-filter: blur(40px);
+}
+@media (min-width: 640px) {
+  .input-box-inner {
+    padding: 8px;
+  }
+}
+.dark .input-box-inner {
+  background-color: rgba(10, 5, 20, 0.95);
+}
+
+.input-box-layout {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  position: relative;
+}
+@media (min-width: 640px) {
+  .input-box-layout {
+    gap: 8px;
+  }
+}
+
+.input-box-textarea-wrapper {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+.input-box-textarea {
+  max-height: 112px;
+  min-height: 44px;
+  width: 100%;
+  resize: none;
+  background-color: transparent;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 12px;
+  padding-right: 8px;
+  font-size: 14px;
+  line-height: 1.625;
+  color: #0f172a;
+  outline: none;
+}
+@media (min-width: 640px) {
+  .input-box-textarea {
+    min-height: 48px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-left: 16px;
+    padding-right: 16px;
+    font-size: 16px;
+  }
+}
+@media (min-width: 768px) {
+  .input-box-textarea {
+    font-size: 18px;
+  }
+}
+.input-box-textarea::placeholder {
+  color: #94a3b8;
+}
+.input-box-textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.dark .input-box-textarea {
+  color: #fff1f1;
+}
+.dark .input-box-textarea::placeholder {
+  color: rgba(233, 179, 251, 0.6);
+}
+
+.input-box-btn-wrapper {
+  display: flex;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding-right: 4px;
+}
+@media (min-width: 640px) {
+  .input-box-btn-wrapper {
+    height: 48px;
+    padding-right: 8px;
+  }
+}
+
+.input-box-btn-base {
+  display: grid;
+  height: 44px;
+  width: 44px;
+  place-items: center;
+  border-radius: 9999px;
+  transition: all 150ms;
+}
+@media (min-width: 640px) {
+  .input-box-btn-base {
+    height: 40px;
+    width: 40px;
+  }
+}
+.input-box-btn-base:disabled {
+  cursor: not-allowed;
+  background-color: transparent;
+  color: #64748b;
+  box-shadow: none;
+}
+
+.input-box-btn-stop {
+  background-color: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(244, 63, 94, 0.3), 0 4px 6px -2px rgba(244, 63, 94, 0.3);
+  border: none;
+}
+.input-box-btn-stop:hover:not(:disabled) {
+  background-color: #e11d48;
+}
+.dark .input-box-btn-stop {
+  background-color: #fb7185;
+  color: #020617;
+  box-shadow: 0 0 28px rgba(251, 113, 133, 0.32);
+}
+.dark .input-box-btn-stop:hover:not(:disabled) {
+  background-color: #fda4af;
+}
+
+.input-box-btn-send {
+  background-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+.input-box-btn-send:hover:not(:disabled) {
+  background-color: #1e293b;
+}
+.dark .input-box-btn-send {
+  background-color: #A855F7;
+  color: #fff1f1;
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.45);
+}
+.dark .input-box-btn-send:hover:not(:disabled) {
+  background-color: rgba(168, 85, 247, 0.8);
+}
+
+.input-box-btn-disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border: none;
+}
+.dark .input-box-btn-disabled {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(233, 179, 251, 0.6);
+}
