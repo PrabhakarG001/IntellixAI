@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
@@ -24,8 +24,8 @@ export const loginWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error) {
-    console.error("Google sign in error", error);
-    throw error;
+    console.error("Google sign in popup error, falling back to redirect", error);
+    await signInWithRedirect(auth, googleProvider);
   }
 };
 

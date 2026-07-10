@@ -12,13 +12,15 @@
 .login-page-container {
   position: relative;
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   align-items: center;
   justify-content: center;
   background-color: #0a0514;
   color: #f1f5f9;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Background Layer */
