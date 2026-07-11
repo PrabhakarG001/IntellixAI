@@ -269,12 +269,13 @@ export function useChat({ selectedModel, user }) {
           }));
         } else {
           setError(streamError.message);
-          patchMessage(chatId, assistantMessage.id, (message) => ({
-            ...message,
+          patchMessage(chatId, assistantMessage.id, (prev) => ({
+            ...prev,
             streaming: false,
             error: true,
             content:
-              message.content ||
+              prev.content ||
+              `Streaming failed: ${streamError.message}` ||
               "The streaming request failed. Check backend keys and try again.",
           }));
         }
