@@ -546,6 +546,11 @@
 .sidebar-chat-item:hover .sidebar-chat-actions {
   opacity: 1;
 }
+@media (max-width: 1023px) {
+  .sidebar-chat-actions {
+    opacity: 1;
+  }
+}
 
 .sidebar-no-chats {
   padding: 16px 12px;
