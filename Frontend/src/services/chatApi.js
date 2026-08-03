@@ -57,7 +57,7 @@ export async function streamChatMessage({
   thinkingMode,
   signal,
 }) {
-  const response = await fetch(`${API_BASE}/chat/stream`, {
+  const response = await fetch(`${API_BASE}/intellix/stream`, {
     method: "POST",
     headers: await getAuthHeaders({ "Content-Type": "application/json" }),
     signal,

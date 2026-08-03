@@ -11,8 +11,7 @@ if (getApps().length === 0) {
 export const verifyUser = async (req, res, next) => {
   const token = req.headers.authorization?.split("Bearer ")[1];
   if (!token) {
-    // We can allow unauthenticated access for now if we want to preserve fallback,
-    // but the requirement is to restrict chats to the logged-in user.
+   
     return res.status(401).json({ error: "Unauthorized" });
   }
 

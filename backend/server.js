@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import chatRoutes from './routes/chat.js';
+import intellixRoutes from './routes/intellix.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api', chatRoutes);
+app.use('/api/intellix', intellixRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
