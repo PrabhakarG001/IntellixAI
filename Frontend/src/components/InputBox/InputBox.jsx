@@ -26,7 +26,6 @@ function InputBox({ value, onChange, onSend, disabled, isGenerating, onStop, sel
           onChange={(e) => onModeChange && onModeChange(e.target.value)}
           className="bg-transparent text-sm text-slate-500 dark:text-slate-400 outline-none cursor-pointer hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
         >
-          <option value="auto">✨ Auto (Detect Intent)</option>
           <option value="coding">💻 Coding (Laguna)</option>
           <option value="reasoning">🧠 Reasoning (Nemotron)</option>
           <option value="general">💬 General (OpenAI)</option>

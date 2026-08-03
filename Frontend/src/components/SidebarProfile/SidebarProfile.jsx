@@ -88,8 +88,12 @@ export default function SidebarProfile({ user, sidebarOpen }) {
         className="sidebar-profile-trigger group relative"
         onClick={() => setMenuOpen(!menuOpen)}
       >
-        <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden border border-white/20 shadow-md group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-purple-500/20 group-hover:border-white/40 transition-all duration-300">
-          <img src={user.photoURL} className="w-full h-full object-cover" alt="Profile" />
+        <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden border border-white/20 shadow-md group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-purple-500/20 group-hover:border-white/40 transition-all duration-300 bg-slate-800 flex items-center justify-center">
+          {user?.photoURL ? (
+            <img src={user.photoURL} className="w-full h-full object-cover" alt="Profile" referrerPolicy="no-referrer" />
+          ) : (
+            <UserCircle2 className="w-full h-full text-slate-400 p-0.5" />
+          )}
         </div>
         
         {!sidebarOpen && (
