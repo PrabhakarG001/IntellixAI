@@ -8,6 +8,8 @@ function MainWorkspace({
   onSendMessage,
   onStopGeneration,
   onRegenerate,
+  selectedMode,
+  onModeChange,
 }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col">
@@ -19,6 +21,8 @@ function MainWorkspace({
         onStopGeneration={onStopGeneration}
         onRegenerate={onRegenerate}
         onOpenSidebar={onOpenSidebar}
+        selectedMode={selectedMode}
+        onModeChange={onModeChange}
       />
     </main>
   );

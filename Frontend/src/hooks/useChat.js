@@ -19,7 +19,7 @@ const fallbackChats = [
   },
 ];
 
-export function useChat({ selectedModel, user }) {
+export function useChat({ selectedModel, user, selectedMode }) {
   const [chats, setChats] = useState(fallbackChats);
   const [activeChatId, setActiveChatId] = useState(fallbackChats[0].id);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -233,6 +233,7 @@ export function useChat({ selectedModel, user }) {
           chatId,
           message: trimmed,
           model: selectedModel,
+          selectedMode,
           signal: controller.signal,
         });
 
@@ -289,6 +290,7 @@ export function useChat({ selectedModel, user }) {
       isGenerating,
       patchMessage,
       selectedModel,
+      selectedMode,
       upsertChat,
     ],
   );

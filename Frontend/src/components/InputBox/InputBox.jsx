@@ -2,7 +2,7 @@ import "./InputBox.css";
 import { ArrowUp, Square } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-function InputBox({ value, onChange, onSend, disabled, isGenerating, onStop }) {
+function InputBox({ value, onChange, onSend, disabled, isGenerating, onStop, selectedMode, onModeChange }) {
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -19,7 +19,19 @@ function InputBox({ value, onChange, onSend, disabled, isGenerating, onStop }) {
   };
 
   return (
-    <div className="group/input input-box-wrapper">
+    <div className="group/input input-box-wrapper flex flex-col gap-2">
+      <div className="flex justify-start px-2 py-1">
+        <select
+          value={selectedMode}
+          onChange={(e) => onModeChange && onModeChange(e.target.value)}
+          className="bg-transparent text-sm text-slate-500 dark:text-slate-400 outline-none cursor-pointer hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+        >
+          <option value="auto">✨ Auto (Detect Intent)</option>
+          <option value="coding">💻 Coding (Laguna)</option>
+          <option value="reasoning">🧠 Reasoning (Nemotron)</option>
+          <option value="general">💬 General (OpenAI)</option>
+        </select>
+      </div>
       <div className="input-box-animated-border"></div>
       <div className="input-box-solid-border"></div>
 

@@ -57,8 +57,13 @@ export const handleIntellixStream = async (req, res) => {
       sendSse(res, { type: "thought", content: "Generating response...\n" });
     }
 
-    const intent = detectIntent(request.message);
-    
+    let intent;
+    if (req.body.selectedMode && req.body.selectedMode !== "auto") {
+      intent = req.body.selectedMode;
+      if (intent === "general") intent = "openai";
+    } else {
+      intent = detectIntent(request.message);
+    }
     // Attempt to create stream based on detected intent, with fallback to OpenAI
     try {
       if (intent === "coding") {

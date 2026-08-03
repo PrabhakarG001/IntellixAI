@@ -54,6 +54,7 @@ export async function streamChatMessage({
   chatId,
   message,
   model,
+  selectedMode,
   thinkingMode,
   signal,
 }) {
@@ -65,6 +66,7 @@ export async function streamChatMessage({
       chatId,
       message,
       model,
+      selectedMode,
       thinking: thinkingMode === "deep",
       thinkingMode,
     }),

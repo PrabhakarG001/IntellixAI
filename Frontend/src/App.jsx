@@ -17,6 +17,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedModel] = useState("openai");
+  const [selectedMode, setSelectedMode] = useState("auto");
   const [searchQuery, setSearchQuery] = useState("");
   
   useEffect(() => {
@@ -42,7 +43,7 @@ function App() {
     sendMessage,
     startNewChat,
     stopGeneration,
-  } = useChat({ selectedModel, user });
+  } = useChat({ selectedModel, user, selectedMode });
 
   const filteredChats = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -126,6 +127,8 @@ function App() {
                     onSendMessage={sendMessage}
                     onStopGeneration={stopGeneration}
                     onRegenerate={regenerateResponse}
+                    selectedMode={selectedMode}
+                    onModeChange={setSelectedMode}
                   />
                 </div>
               </div>
