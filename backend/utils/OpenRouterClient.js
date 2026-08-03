@@ -1,14 +1,14 @@
 import { OpenRouter } from "@openrouter/sdk";
 
-const DEFAULT_MODEL = "nvidia/nemotron-3-nano-30b-a3b";
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
-export function getNvidiaModel() {
+export function getOpenRouterModel() {
   return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
 }
 
-export async function createNvidiaStream({
+export async function createOpenRouterStream({
   messages,
-  model = getNvidiaModel(),
+  model = getOpenRouterModel(),
 }) {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -17,6 +17,17 @@ export async function createNvidiaStream({
   }
 
   const openrouter = new OpenRouter({ apiKey });
+
+  const mappedMessages = messages.map(msg => {
+    if (msg.role === 'assistant' && msg.thought) {
+      return {
+        role: msg.role,
+        content: msg.content,
+        reasoning_details: msg.thought
+      };
+    }
+    return msg;
+  });
 
   const stream = await openrouter.chat.send({
     chatRequest: {
@@ -27,9 +38,10 @@ export async function createNvidiaStream({
           content:
             "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
         },
-        ...messages,
+        ...mappedMessages,
       ],
       stream: true,
+      reasoning: { enabled: true }
     }
   });
 

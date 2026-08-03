@@ -16,7 +16,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("gemma");
+  const [selectedModel, setSelectedModel] = useState("openai");
   const [searchQuery, setSearchQuery] = useState("");
   
   useEffect(() => {

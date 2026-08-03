@@ -3,20 +3,17 @@ import { randomUUID } from "node:crypto";
 import { Thread, normalizeMessages, titleFromMessages } from "../models/thread.js";
 import {
   classifyPayload,
-  createNvidiaStream,
+  createOpenRouterStream,
   createStreamClassifier,
-  getNvidiaModel,
-} from "../utils/Nvidia.js";
+  getOpenRouterModel,
+} from "../utils/OpenRouterClient.js";
 import { verifyUser } from "../utils/auth.js";
 
 const router = express.Router();
 
 const providerModels = {
-  gemma: process.env.OPENROUTER_NVIDIA_MODEL || getNvidiaModel(),
-  nvidia: process.env.OPENROUTER_NVIDIA_MODEL || getNvidiaModel(),
-  deepseek:
-    process.env.OPENROUTER_DEEPSEEK_MODEL ||
-    "deepseek/deepseek-r1-distill-llama-70b",
+  nvidia: process.env.OPENROUTER_MODEL || getOpenRouterModel(),
+  openai: process.env.OPENROUTER_MODEL || getOpenRouterModel(),
 };
 
 router.get("/chats", verifyUser, async (req, res) => {
@@ -187,7 +184,7 @@ async function buildChatRequest(body = {}, userId) {
 }
 
 async function createModelStream(request) {
-  return createNvidiaStream({
+  return createOpenRouterStream({
     messages: withThinkingModeInstruction(request.messages, request.thinkingMode),
     model: request.providerModel,
   });
@@ -231,9 +228,7 @@ async function saveConversation(request, assistant, userId) {
 }
 
 function normalizeModel(model) {
-  const value = String(model || "gemma").toLowerCase();
-  if (value.includes("deepseek")) return "deepseek";
-  return "gemma";
+  return "openai";
 }
 
 function normalizeThinkingMode(mode, legacyThinking) {
