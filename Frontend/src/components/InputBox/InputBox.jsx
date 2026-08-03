@@ -25,17 +25,15 @@ function InputBox({ value, onChange, onSend, disabled, isGenerating, onStop, sel
 
       <div className="input-box-inner flex flex-col gap-1">
         <div className="flex justify-start px-3 pt-2">
-          <div className="bg-slate-100 dark:bg-white/5 rounded-full px-3 py-1 flex items-center border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors cursor-pointer">
-            <select
-              value={selectedMode}
-              onChange={(e) => onModeChange && onModeChange(e.target.value)}
-              className="bg-transparent text-xs font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer w-full"
-            >
-              <option value="coding">💻 Coding (Laguna)</option>
-              <option value="reasoning">🧠 Reasoning (Nemotron)</option>
-              <option value="general">💬 General (OpenAI)</option>
-            </select>
-          </div>
+          <select
+            value={selectedMode}
+            onChange={(e) => onModeChange && onModeChange(e.target.value)}
+            className="bg-slate-100 dark:bg-white/5 rounded-full px-3 py-1.5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-xs font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
+          >
+            <option value="coding">💻 Coding (Laguna)</option>
+            <option value="reasoning">🧠 Reasoning (Nemotron)</option>
+            <option value="general">💬 General (OpenAI)</option>
+          </select>
         </div>
         <div className="input-box-layout">
           <div className="input-box-textarea-wrapper">
