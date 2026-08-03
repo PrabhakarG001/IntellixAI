@@ -1,4 +1,4 @@
-import { OpenRouter } from "@openrouter/sdk";
+import OpenAI from 'openai';
 
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
@@ -16,7 +16,10 @@ export async function createOpenRouterStream({
     throw new Error("OPENROUTER_API_KEY is not configured on the backend.");
   }
 
-  const openrouter = new OpenRouter({ apiKey });
+  const openrouter = new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey,
+  });
 
   const mappedMessages = messages.map(msg => {
     if (msg.role === 'assistant' && msg.thought) {
@@ -29,20 +32,18 @@ export async function createOpenRouterStream({
     return msg;
   });
 
-  const stream = await openrouter.chat.send({
-    chatRequest: {
-      model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
-        },
-        ...mappedMessages,
-      ],
-      stream: true,
-      reasoning: { enabled: true }
-    }
+  const stream = await openrouter.chat.completions.create({
+    model,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
+      },
+      ...mappedMessages,
+    ],
+    stream: true,
+    reasoning: { enabled: true }
   });
 
   return stream;

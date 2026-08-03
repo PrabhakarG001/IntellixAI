@@ -1,25 +1,5 @@
-import { buildChatRequest, saveConversation } from "../services/chatService.js";
+import { buildChatRequest, saveConversation, createModelStream } from "../services/chatService.js";
 import { classifyPayload, createStreamClassifier } from "../utils/OpenRouterClient.js";
-import { createCodingStream } from "../services/codingService.js";
-import { createReasoningStream } from "../services/reasoningService.js";
-import { createOpenAIStream } from "../services/openaiService.js";
-
-const CODING_KEYWORDS = ["code", "debug", "error", "function", "program"];
-const REASONING_KEYWORDS = ["why", "explain deeply", "logic", "step by step", "reason"];
-
-function detectIntent(message) {
-  const lowerMessage = message.toLowerCase();
-  
-  if (CODING_KEYWORDS.some(keyword => lowerMessage.includes(keyword))) {
-    return "coding";
-  }
-  
-  if (REASONING_KEYWORDS.some(keyword => lowerMessage.includes(keyword))) {
-    return "reasoning";
-  }
-  
-  return "openai";
-}
 
 function sendSse(res, payload) {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
@@ -57,27 +37,8 @@ export const handleIntellixStream = async (req, res) => {
       sendSse(res, { type: "thought", content: "Generating response...\n" });
     }
 
-    let intent;
-    if (req.body.selectedMode && req.body.selectedMode !== "auto") {
-      intent = req.body.selectedMode;
-      if (intent === "general") intent = "openai";
-    } else {
-      intent = detectIntent(request.message);
-    }
-    // Attempt to create stream based on detected intent, with fallback to OpenAI
-    try {
-      if (intent === "coding") {
-        stream = await createCodingStream(request);
-      } else if (intent === "reasoning") {
-        stream = await createReasoningStream(request);
-      } else {
-        stream = await createOpenAIStream(request);
-      }
-    } catch (modelError) {
-      console.warn(`Model ${intent} failed, falling back to OpenAI...`, modelError?.message);
-      // Fallback if primary model fails
-      stream = await createOpenAIStream(request);
-    }
+    // Call the single unified OpenRouter stream
+    stream = await createModelStream(request);
 
     for await (const chunk of stream) {
       for (const token of classifyPayload(chunk, classifier)) {

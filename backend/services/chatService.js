@@ -7,15 +7,6 @@ import {
   getOpenRouterModel,
 } from "../utils/OpenRouterClient.js";
 
-const providerModels = {
-  nvidia: process.env.OPENROUTER_MODEL || getOpenRouterModel(),
-  openai: process.env.OPENROUTER_MODEL || getOpenRouterModel(),
-};
-
-function normalizeModel(model) {
-  return "openai";
-}
-
 function normalizeThinkingMode(mode, legacyThinking) {
   const value = String(mode || "").toLowerCase();
   if (value === "deep") return "deep";
@@ -40,7 +31,6 @@ function withThinkingModeInstruction(messages, thinkingMode) {
 
 export async function buildChatRequest(body = {}, userId) {
   const message = String(body.message || "").trim();
-  const requestedModel = normalizeModel(body.model);
   const thinkingMode = normalizeThinkingMode(body.thinkingMode, body.thinking);
   const chatId = String(body.chatId || randomUUID());
   const existingChat = await Thread.findById(chatId, userId);
@@ -52,8 +42,7 @@ export async function buildChatRequest(body = {}, userId) {
 
   return {
     chatId,
-    model: requestedModel,
-    providerModel: providerModels[requestedModel],
+    model: getOpenRouterModel(),
     message,
     thinkingMode,
     thinking: thinkingMode === "deep",
@@ -70,7 +59,7 @@ export async function buildChatRequest(body = {}, userId) {
 export async function createModelStream(request) {
   return createOpenRouterStream({
     messages: withThinkingModeInstruction(request.messages, request.thinkingMode),
-    model: request.providerModel,
+    model: request.model,
   });
 }
 

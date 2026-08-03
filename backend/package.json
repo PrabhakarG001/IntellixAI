@@ -12,11 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@openrouter/sdk": "^0.12.35",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "firebase-admin": "^14.1.0",
-    "mongoose": "^9.7.4"
+    "mongoose": "^9.7.4",
+    "openai": "^7.3.0"
   }
 }
