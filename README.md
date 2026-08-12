@@ -78,7 +78,7 @@ IntellixAI/
 
 ---
 
-## ⚙️ Getting Started
+## ⚙️ Prerequisites & Setup
 
 ### Prerequisites
 
@@ -116,42 +116,6 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
-
----
-
-## 🚀 Running the Project
-
-### 1. Install Dependencies
-
-Install dependencies for both frontend and backend:
-
-**Root & Frontend:**
-```bash
-npm run install
-```
-*(Or navigate into each directory manually)*
-```bash
-cd Frontend && npm install
-cd ../backend && npm install
-```
-
-### 2. Start the Backend Server
-
-From the `backend` directory:
-```bash
-cd backend
-npm start
-```
-The server will run at `http://localhost:5000`.
-
-### 3. Start the Frontend Development Server
-
-From the `Frontend` directory:
-```bash
-cd Frontend
-npm run dev
-```
-Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
