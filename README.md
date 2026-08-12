@@ -78,19 +78,6 @@ IntellixAI/
 
 ---
 
-## ⚙️ Prerequisites & Setup
-
-### Prerequisites
-
-Ensure you have the following installed on your machine:
-- **[Node.js](https://nodejs.org/)** (v18+ recommended)
-- **[npm](https://www.npmjs.com/)** or **yarn**
-- **[MongoDB](https://www.mongodb.com/)** (Local server running on port `27017` or a MongoDB Atlas URI)
-- An active **[OpenRouter API Key](https://openrouter.ai/)**
-- A **[Firebase Project](https://console.firebase.google.com/)** (with Google Sign-In and Email/Password enabled)
-
----
-
 ## 🔑 Environment Configuration
 
 ### Backend Environment Variables (`backend/.env`)
