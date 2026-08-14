@@ -102,6 +102,7 @@ export async function createFallbackStream({ messages, selectedMode = "auto" }) 
           ...mappedMessages,
         ],
         stream: true,
+        max_tokens: 1000,
         reasoning: { enabled: true }
       });
 
