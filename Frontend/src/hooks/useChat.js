@@ -19,7 +19,7 @@ const fallbackChats = [
   },
 ];
 
-export function useChat({ selectedModel, user, selectedMode }) {
+export function useChat({ selectedModel, selectedProvider, user, selectedMode }) {
   const [chats, setChats] = useState(fallbackChats);
   const [activeChatId, setActiveChatId] = useState(fallbackChats[0].id);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -232,6 +232,8 @@ export function useChat({ selectedModel, user, selectedMode }) {
         const body = await streamChatMessage({
           chatId,
           message: trimmed,
+          mode: selectedMode,
+          provider: selectedProvider,
           model: selectedModel,
           selectedMode,
           signal: controller.signal,

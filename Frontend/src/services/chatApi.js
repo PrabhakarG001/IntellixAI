@@ -53,11 +53,14 @@ export async function clearChatById(chatId) {
 export async function streamChatMessage({
   chatId,
   message,
+  mode,
+  provider,
   model,
   selectedMode,
   thinkingMode,
   signal,
 }) {
+  const activeMode = mode || selectedMode || "talk";
   const response = await fetch(`${API_BASE}/intellix/stream`, {
     method: "POST",
     headers: await getAuthHeaders({ "Content-Type": "application/json" }),
@@ -65,8 +68,10 @@ export async function streamChatMessage({
     body: JSON.stringify({
       chatId,
       message,
-      model,
-      selectedMode,
+      mode: activeMode,
+      provider: provider || "openrouter",
+      model: model || "openai/gpt-oss-120b",
+      selectedMode: activeMode,
       thinking: thinkingMode === "deep",
       thinkingMode,
     }),

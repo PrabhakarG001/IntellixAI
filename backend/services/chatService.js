@@ -31,6 +31,9 @@ function withThinkingModeInstruction(messages, thinkingMode) {
 
 export async function buildChatRequest(body = {}, userId) {
   const message = String(body.message || "").trim();
+  const mode = String(body.mode || body.selectedMode || "talk").toLowerCase();
+  const provider = String(body.provider || "openrouter").toLowerCase();
+  const model = String(body.model || getOpenRouterModel());
   const thinkingMode = normalizeThinkingMode(body.thinkingMode, body.thinking);
   const chatId = String(body.chatId || randomUUID());
   const existingChat = await Thread.findById(chatId, userId);
@@ -42,8 +45,10 @@ export async function buildChatRequest(body = {}, userId) {
 
   return {
     chatId,
-    model: getOpenRouterModel(),
-    selectedMode: body.selectedMode || "auto",
+    mode,
+    provider,
+    model,
+    selectedMode: mode,
     message,
     thinkingMode,
     thinking: thinkingMode === "deep",
@@ -60,7 +65,9 @@ export async function buildChatRequest(body = {}, userId) {
 export async function createModelStream(request) {
   return createFallbackStream({
     messages: withThinkingModeInstruction(request.messages, request.thinkingMode),
-    selectedMode: request.selectedMode || "auto",
+    selectedMode: request.mode || request.selectedMode || "talk",
+    requestedModel: request.model,
+    requestedProvider: request.provider,
   });
 }
 

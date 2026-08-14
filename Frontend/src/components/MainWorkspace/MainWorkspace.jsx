@@ -9,7 +9,9 @@ function MainWorkspace({
   onStopGeneration,
   onRegenerate,
   selectedMode,
-  onModeChange,
+  selectedProvider,
+  selectedModel,
+  onSelectionChange,
 }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col">
@@ -22,7 +24,9 @@ function MainWorkspace({
         onRegenerate={onRegenerate}
         onOpenSidebar={onOpenSidebar}
         selectedMode={selectedMode}
-        onModeChange={onModeChange}
+        selectedProvider={selectedProvider}
+        selectedModel={selectedModel}
+        onSelectionChange={onSelectionChange}
       />
     </main>
   );

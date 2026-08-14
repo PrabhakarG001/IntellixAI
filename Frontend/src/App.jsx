@@ -16,9 +16,16 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [selectedModel] = useState("openai");
-  const [selectedMode, setSelectedMode] = useState("auto");
+  const [selectedMode, setSelectedMode] = useState("talk");
+  const [selectedProvider, setSelectedProvider] = useState("openrouter");
+  const [selectedModel, setSelectedModel] = useState("openai/gpt-oss-120b");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSelectionChange = ({ mode, provider, model }) => {
+    if (mode) setSelectedMode(mode);
+    if (provider) setSelectedProvider(provider);
+    if (model) setSelectedModel(model);
+  };
   
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -43,7 +50,7 @@ function App() {
     sendMessage,
     startNewChat,
     stopGeneration,
-  } = useChat({ selectedModel, user, selectedMode });
+  } = useChat({ selectedModel, selectedProvider, selectedMode, user });
 
   const filteredChats = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -128,7 +135,9 @@ function App() {
                     onStopGeneration={stopGeneration}
                     onRegenerate={regenerateResponse}
                     selectedMode={selectedMode}
-                    onModeChange={setSelectedMode}
+                    selectedProvider={selectedProvider}
+                    selectedModel={selectedModel}
+                    onSelectionChange={handleSelectionChange}
                   />
                 </div>
               </div>

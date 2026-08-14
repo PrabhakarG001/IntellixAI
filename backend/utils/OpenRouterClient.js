@@ -47,22 +47,26 @@ export const API_POOL = [
  * Creates stream with automatic fallback across configured models in API_POOL.
  * @param {Object} params
  * @param {Array} params.messages - Array of chat messages.
- * @param {string} [params.selectedMode="auto"] - Selected mode (auto, primary, reasoning, coding).
+ * @param {string} [params.selectedMode="talk"] - Selected mode (talk, coding, reasoning).
+ * @param {string} [params.requestedModel] - Specific requested model ID.
+ * @param {string} [params.requestedProvider] - Specific requested provider.
  */
-export async function createFallbackStream({ messages, selectedMode = "auto" }) {
+export async function createFallbackStream({ messages, selectedMode = "talk", requestedModel, requestedProvider }) {
   const availablePool = API_POOL.filter(item => Boolean(item.key()));
 
   if (availablePool.length === 0) {
     throw new Error("OPENROUTER_API_KEY is not configured on backend.");
   }
 
-  // Re-order pool based on user's mode preference
+  // Re-order pool based on user's mode/model preference
   let orderedPool = [...availablePool];
-  if (selectedMode === "reasoning") {
+  if (requestedModel) {
+    orderedPool.sort((a) => (a.model() === requestedModel ? -1 : 1));
+  } else if (selectedMode === "reasoning") {
     orderedPool.sort((a) => (a.id === "openrouter-nemotron" ? -1 : 1));
   } else if (selectedMode === "coding") {
     orderedPool.sort((a) => (a.id === "openrouter-laguna" ? -1 : 1));
-  } else if (selectedMode === "primary") {
+  } else {
     orderedPool.sort((a) => (a.id === "openrouter-primary" ? -1 : 1));
   }
 

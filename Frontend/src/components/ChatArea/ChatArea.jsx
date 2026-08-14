@@ -14,7 +14,9 @@ function ChatArea({
   onRegenerate,
   onOpenSidebar,
   selectedMode,
-  onModeChange,
+  selectedProvider,
+  selectedModel,
+  onSelectionChange,
 }) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef(null);
@@ -78,7 +80,9 @@ function ChatArea({
               isGenerating={isGenerating}
               onStop={onStopGeneration}
               selectedMode={selectedMode}
-              onModeChange={onModeChange}
+              selectedProvider={selectedProvider}
+              selectedModel={selectedModel}
+              onSelectionChange={onSelectionChange}
             />
           </div>
         </div>
@@ -149,7 +153,9 @@ function ChatArea({
             isGenerating={isGenerating}
             onStop={onStopGeneration}
             selectedMode={selectedMode}
-            onModeChange={onModeChange}
+            selectedProvider={selectedProvider}
+            selectedModel={selectedModel}
+            onSelectionChange={onSelectionChange}
           />
           <p className="chat-disclaimer-text">
             IntellixAI can make mistakes. Check important info.
