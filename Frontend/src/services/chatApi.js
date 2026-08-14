@@ -120,9 +120,9 @@ export async function consumeSse(body, handlers) {
 async function safeReadError(response) {
   try {
     const payload = await response.json();
-    return payload.details || payload.error || "";
+    return payload.details || payload.error || `Streaming failed (HTTP ${response.status}).`;
   } catch {
-    return "";
+    return `Streaming failed (HTTP ${response.status}).`;
   }
 }
 
