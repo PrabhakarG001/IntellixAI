@@ -30,9 +30,10 @@ function InputBox({ value, onChange, onSend, disabled, isGenerating, onStop, sel
             onChange={(e) => onModeChange && onModeChange(e.target.value)}
             className="bg-slate-100 dark:bg-white/5 rounded-full px-3 py-1.5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-xs font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
           >
-            <option value="coding">💻 Coding (Laguna)</option>
-            <option value="reasoning">🧠 Reasoning (Nemotron)</option>
-            <option value="general">💬 General (OpenAI)</option>
+            <option value="auto">⚡ Auto (API Fallback Pool)</option>
+            <option value="primary">🤖 Primary (GPT OSS 120B)</option>
+            <option value="reasoning">🧠 Reasoning (NVIDIA Nemotron)</option>
+            <option value="coding">💻 Coding (Poolside Laguna)</option>
           </select>
         </div>
         <div className="input-box-layout">

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Thread, normalizeMessages, titleFromMessages } from "../models/thread.js";
 import {
   classifyPayload,
-  createOpenRouterStream,
+  createFallbackStream,
   createStreamClassifier,
   getOpenRouterModel,
 } from "../utils/OpenRouterClient.js";
@@ -43,6 +43,7 @@ export async function buildChatRequest(body = {}, userId) {
   return {
     chatId,
     model: getOpenRouterModel(),
+    selectedMode: body.selectedMode || "auto",
     message,
     thinkingMode,
     thinking: thinkingMode === "deep",
@@ -57,9 +58,9 @@ export async function buildChatRequest(body = {}, userId) {
 }
 
 export async function createModelStream(request) {
-  return createOpenRouterStream({
+  return createFallbackStream({
     messages: withThinkingModeInstruction(request.messages, request.thinkingMode),
-    model: request.model,
+    selectedMode: request.selectedMode || "auto",
   });
 }
 

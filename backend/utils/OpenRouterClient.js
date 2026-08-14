@@ -6,48 +6,116 @@ export function getOpenRouterModel() {
   return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
 }
 
-export async function createOpenRouterStream({
-  messages,
-  model = getOpenRouterModel(),
-}) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+// Extensible API Pool for multi-provider streaming & fallback
+export const API_POOL = [
+  {
+    id: "openrouter-primary",
+    name: "OpenRouter (GPT OSS 120B)",
+    baseURL: "https://openrouter.ai/api/v1",
+    key: () => process.env.OPENROUTER_API_KEY,
+    model: () => process.env.OPENROUTER_MODEL || "openai/gpt-oss-120b",
+    defaultHeaders: {
+      "HTTP-Referer": "https://localhost",
+      "X-Title": "IntellixAI"
+    }
+  },
+  {
+    id: "openrouter-nemotron",
+    name: "OpenRouter (NVIDIA Nemotron 3 Nano)",
+    baseURL: "https://openrouter.ai/api/v1",
+    key: () => process.env.OPENROUTER_API_KEY,
+    model: () => process.env.OPENROUTER_NEMOTRON_MODEL || "nvidia/nemotron-3-nano-30b-a3b",
+    defaultHeaders: {
+      "HTTP-Referer": "https://localhost",
+      "X-Title": "IntellixAI"
+    }
+  },
+  {
+    id: "openrouter-laguna",
+    name: "OpenRouter (Poolside Laguna S 2.1 Free)",
+    baseURL: "https://openrouter.ai/api/v1",
+    key: () => process.env.OPENROUTER_API_KEY,
+    model: () => process.env.OPENROUTER_LAGUNA_MODEL || "poolside/laguna-s-2.1:free",
+    defaultHeaders: {
+      "HTTP-Referer": "https://localhost",
+      "X-Title": "IntellixAI"
+    }
+  }
+];
 
-  if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY is not configured on the backend.");
+/**
+ * Creates stream with automatic fallback across configured models in API_POOL.
+ * @param {Object} params
+ * @param {Array} params.messages - Array of chat messages.
+ * @param {string} [params.selectedMode="auto"] - Selected mode (auto, primary, reasoning, coding).
+ */
+export async function createFallbackStream({ messages, selectedMode = "auto" }) {
+  const availablePool = API_POOL.filter(item => Boolean(item.key()));
+
+  if (availablePool.length === 0) {
+    throw new Error("OPENROUTER_API_KEY is not configured on backend.");
   }
 
-  const openrouter = new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey,
-  });
+  // Re-order pool based on user's mode preference
+  let orderedPool = [...availablePool];
+  if (selectedMode === "reasoning") {
+    orderedPool.sort((a) => (a.id === "openrouter-nemotron" ? -1 : 1));
+  } else if (selectedMode === "coding") {
+    orderedPool.sort((a) => (a.id === "openrouter-laguna" ? -1 : 1));
+  } else if (selectedMode === "primary") {
+    orderedPool.sort((a) => (a.id === "openrouter-primary" ? -1 : 1));
+  }
 
-  const mappedMessages = messages.map(msg => {
-    if (msg.role === 'assistant' && msg.thought) {
-      return {
-        role: msg.role,
-        content: msg.content,
-        reasoning_details: msg.thought
-      };
+  for (let i = 0; i < orderedPool.length; i++) {
+    const provider = orderedPool[i];
+    const apiKey = provider.key();
+    const model = provider.model();
+
+    console.log(`[Attempt ${i + 1}/${orderedPool.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
+
+    try {
+      const openrouter = new OpenAI({
+        baseURL: provider.baseURL,
+        apiKey,
+        defaultHeaders: provider.defaultHeaders
+      });
+
+      const mappedMessages = messages.map(msg => {
+        if (msg.role === 'assistant' && msg.thought) {
+          return {
+            role: msg.role,
+            content: msg.content,
+            reasoning_details: msg.thought
+          };
+        }
+        return msg;
+      });
+
+      const stream = await openrouter.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
+          },
+          ...mappedMessages,
+        ],
+        stream: true,
+        reasoning: { enabled: true }
+      });
+
+      return stream;
+    } catch (error) {
+      console.warn(`⚠️ Provider ${provider.name} failed:`, error.message || error);
+      if (i === orderedPool.length - 1) {
+        throw error;
+      }
     }
-    return msg;
-  });
-
-  const stream = await openrouter.chat.completions.create({
-    model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
-      },
-      ...mappedMessages,
-    ],
-    stream: true,
-    reasoning: { enabled: true }
-  });
-
-  return stream;
+  }
 }
+
+
 
 export function createStreamClassifier() {
   return {
