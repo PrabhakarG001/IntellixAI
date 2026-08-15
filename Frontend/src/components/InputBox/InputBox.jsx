@@ -36,14 +36,6 @@ function InputBox({
       <div className="input-box-solid-border"></div>
 
       <div className="input-box-inner flex flex-col gap-1">
-        <div className="flex justify-start px-3 pt-2">
-          <AiModeSelector
-            selectedMode={selectedMode}
-            selectedProvider={selectedProvider}
-            selectedModel={selectedModel}
-            onSelectionChange={onSelectionChange}
-          />
-        </div>
         <div className="input-box-layout">
           <div className="input-box-textarea-wrapper">
             <textarea
@@ -63,7 +55,14 @@ function InputBox({
             />
           </div>
 
-          <div className="input-box-btn-wrapper">
+          <div className="input-box-btn-wrapper flex items-center gap-2">
+            <AiModeSelector
+              selectedMode={selectedMode}
+              selectedProvider={selectedProvider}
+              selectedModel={selectedModel}
+              onSelectionChange={onSelectionChange}
+            />
+
             <button
               type="button"
               onClick={isGenerating ? onStop : submit}

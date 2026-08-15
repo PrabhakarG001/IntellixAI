@@ -98,10 +98,10 @@ function AiModeSelector({
         <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Popover Menu */}
+      {/* Popover Menu (Opens Upwards) */}
       {isOpen && (
         <div
-          className="absolute left-0 top-full mt-2 w-72 sm:w-80 rounded-2xl bg-[#140b27]/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl shadow-purple-950/50 z-50 overflow-hidden transform transition-all duration-200 animate-in fade-in zoom-in-95"
+          className="absolute right-0 bottom-full mb-2 w-72 sm:w-80 rounded-2xl bg-[#140b27]/95 backdrop-blur-xl border border-purple-500/30 shadow-2xl shadow-purple-950/50 z-50 overflow-hidden transform transition-all duration-200 animate-in fade-in zoom-in-95 origin-bottom-right"
           role="menu"
         >
           <div className="p-2 space-y-1">
