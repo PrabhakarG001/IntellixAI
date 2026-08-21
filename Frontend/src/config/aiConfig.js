@@ -9,12 +9,12 @@ export const AI_MODES = {
     name: "Talk",
     icon: "💬",
     description: "General conversation",
-    defaultProvider: "openrouter",
+    defaultProvider: "openai",
     defaultModel: "openai/gpt-oss-120b",
     providers: {
-      openrouter: {
-        id: "openrouter",
-        name: "OpenRouter",
+      openai: {
+        id: "openai",
+        name: "OpenAI",
         models: [
           { id: "openai/gpt-oss-120b", name: "GPT OSS 120B", description: "Versatile conversational model" }
         ]
@@ -26,14 +26,14 @@ export const AI_MODES = {
     name: "Coding",
     icon: "💻",
     description: "Programming & development",
-    defaultProvider: "openrouter",
-    defaultModel: "poolside/laguna-s-2.1:free",
+    defaultProvider: "openai",
+    defaultModel: "openai/gpt-oss-120b",
     providers: {
-      openrouter: {
-        id: "openrouter",
-        name: "OpenRouter",
+      openai: {
+        id: "openai",
+        name: "OpenAI",
         models: [
-          { id: "poolside/laguna-s-2.1:free", name: "Poolside Laguna S 2.1 (Free)", description: "Code synthesis & debugging" }
+          { id: "openai/gpt-oss-120b", name: "GPT OSS 120B (Code)", description: "Code synthesis & development" }
         ]
       }
     }
@@ -43,14 +43,14 @@ export const AI_MODES = {
     name: "Reasoning",
     icon: "🧠",
     description: "Complex problems & analysis",
-    defaultProvider: "openrouter",
-    defaultModel: "nvidia/nemotron-3-nano-30b-a3b",
+    defaultProvider: "openai",
+    defaultModel: "openai/gpt-oss-120b",
     providers: {
-      openrouter: {
-        id: "openrouter",
-        name: "OpenRouter",
+      openai: {
+        id: "openai",
+        name: "OpenAI",
         models: [
-          { id: "nvidia/nemotron-3-nano-30b-a3b", name: "NVIDIA Nemotron 3 Nano", description: "Deep reasoning & math" }
+          { id: "openai/gpt-oss-120b", name: "GPT OSS 120B (Reasoning)", description: "Deep reasoning & structured analysis" }
         ]
       }
     }

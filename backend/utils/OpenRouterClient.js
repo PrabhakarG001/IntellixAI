@@ -6,36 +6,14 @@ export function getOpenRouterModel() {
   return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
 }
 
-// Extensible API Pool for multi-provider streaming & fallback
+// Dedicated OpenAI API Pool configuration
 export const API_POOL = [
   {
-    id: "openrouter-primary",
-    name: "OpenRouter (GPT OSS 120B)",
+    id: "openai-primary",
+    name: "OpenAI (GPT OSS 120B)",
     baseURL: "https://openrouter.ai/api/v1",
-    key: () => process.env.OPENROUTER_API_KEY,
-    model: () => process.env.OPENROUTER_MODEL || "openai/gpt-oss-120b",
-    defaultHeaders: {
-      "HTTP-Referer": "https://localhost",
-      "X-Title": "IntellixAI"
-    }
-  },
-  {
-    id: "openrouter-nemotron",
-    name: "OpenRouter (NVIDIA Nemotron 3 Nano)",
-    baseURL: "https://openrouter.ai/api/v1",
-    key: () => process.env.OPENROUTER_API_KEY,
-    model: () => process.env.OPENROUTER_NEMOTRON_MODEL || "nvidia/nemotron-3-nano-30b-a3b",
-    defaultHeaders: {
-      "HTTP-Referer": "https://localhost",
-      "X-Title": "IntellixAI"
-    }
-  },
-  {
-    id: "openrouter-laguna",
-    name: "OpenRouter (Poolside Laguna S 2.1 Free)",
-    baseURL: "https://openrouter.ai/api/v1",
-    key: () => process.env.OPENROUTER_API_KEY,
-    model: () => process.env.OPENROUTER_LAGUNA_MODEL || "poolside/laguna-s-2.1:free",
+    key: () => process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+    model: () => process.env.OPENROUTER_MODEL || process.env.OPENAI_MODEL || "openai/gpt-oss-120b",
     defaultHeaders: {
       "HTTP-Referer": "https://localhost",
       "X-Title": "IntellixAI"
@@ -44,7 +22,7 @@ export const API_POOL = [
 ];
 
 /**
- * Creates stream with automatic fallback across configured models in API_POOL.
+ * Creates stream via OpenAI API.
  * @param {Object} params
  * @param {Array} params.messages - Array of chat messages.
  * @param {string} [params.selectedMode="talk"] - Selected mode (talk, coding, reasoning).
@@ -55,20 +33,10 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
   const availablePool = API_POOL.filter(item => Boolean(item.key()));
 
   if (availablePool.length === 0) {
-    throw new Error("OPENROUTER_API_KEY is not configured on backend.");
+    throw new Error("API_KEY (OPENROUTER_API_KEY or OPENAI_API_KEY) is not configured on backend.");
   }
 
-  // Re-order pool based on user's mode/model preference
   let orderedPool = [...availablePool];
-  if (requestedModel) {
-    orderedPool.sort((a) => (a.model() === requestedModel ? -1 : 1));
-  } else if (selectedMode === "reasoning") {
-    orderedPool.sort((a) => (a.id === "openrouter-nemotron" ? -1 : 1));
-  } else if (selectedMode === "coding") {
-    orderedPool.sort((a) => (a.id === "openrouter-laguna" ? -1 : 1));
-  } else {
-    orderedPool.sort((a) => (a.id === "openrouter-primary" ? -1 : 1));
-  }
 
   for (let i = 0; i < orderedPool.length; i++) {
     const provider = orderedPool[i];
