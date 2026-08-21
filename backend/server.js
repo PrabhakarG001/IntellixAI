@@ -23,6 +23,7 @@ app.get('/', (req, res) => {
 
 app.use('/api', chatRoutes);
 app.use('/api/intellix', chatRoutes);
+app.use('/', chatRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);

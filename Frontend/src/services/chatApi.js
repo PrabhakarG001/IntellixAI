@@ -1,6 +1,6 @@
 import { auth } from "./firebase.js";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://intellixai.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 async function getAuthHeaders(existingHeaders = {}) {
   const headers = { ...existingHeaders };

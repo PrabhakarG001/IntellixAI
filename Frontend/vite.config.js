@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      "/api": "https://intellixai.onrender.com",
+      "/api": "http://localhost:5000",
     },
   },
 });
