@@ -7,7 +7,6 @@ import {
   Search,
   Sparkles,
   Trash2,
-  UserCircle2,
   X,
   Pin,
   Pencil,

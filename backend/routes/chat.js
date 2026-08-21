@@ -19,5 +19,6 @@ router.delete("/chat/:id", verifyUser, deleteChat);
 router.post("/chat/:id/clear", verifyUser, clearChat);
 router.post("/chat", verifyUser, handleChat);
 router.post("/chat/stream", verifyUser, handleChatStream);
+router.post("/stream", verifyUser, handleChatStream);
 
 export default router;

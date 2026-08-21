@@ -5,7 +5,7 @@ import {
   createFallbackStream,
   createStreamClassifier,
   getOpenRouterModel,
-} from "../utils/OpenRouterClient.js";
+} from "../utils/openRouterClient.js";
 
 function normalizeThinkingMode(mode, legacyThinking) {
   const value = String(mode || "").toLowerCase();

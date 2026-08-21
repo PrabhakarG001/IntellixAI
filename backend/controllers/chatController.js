@@ -5,7 +5,7 @@ import {
   generateCompleteResponse,
   saveConversation,
 } from "../services/chatService.js";
-import { classifyPayload, createStreamClassifier } from "../utils/OpenRouterClient.js";
+import { classifyPayload, createStreamClassifier } from "../utils/openRouterClient.js";
 
 export const getChats = async (req, res) => {
   try {
@@ -126,6 +126,10 @@ export const handleChatStream = async (req, res) => {
         if (token.type === "thought") assistantThought += token.content;
         if (token.type === "content") assistantContent += token.content;
         sendSse(res, token);
+      }
+
+      if (chunk.usage?.completionTokensDetails?.reasoningTokens) {
+        console.log("\nReasoning tokens:", chunk.usage.completionTokensDetails.reasoningTokens);
       }
     }
 

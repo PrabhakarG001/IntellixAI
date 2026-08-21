@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
-import '../../styles/DescriptiveText.css';
+import './DecryptedText.css';
 
 export default function DecryptedText({
   text,

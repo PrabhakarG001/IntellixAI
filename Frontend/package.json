@@ -9,7 +9,6 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^5.1.1",
     "firebase": "^12.15.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.556.0",
@@ -22,6 +21,7 @@
     "vite": "^7.2.7"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "tailwindcss": "^4.1.18"
   }

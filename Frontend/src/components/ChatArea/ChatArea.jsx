@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowDown, RotateCcw, Menu } from "lucide-react";
+import { AlertCircle, RotateCcw, Menu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import InputBox from "../InputBox/InputBox.jsx";
 import MessageItem from "../MessageItem/MessageItem.jsx";
@@ -20,7 +20,6 @@ function ChatArea({
 }) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef(null);
-  const scrollRef = useRef(null);
   const messages = activeChat?.messages ?? [];
   const hasMessages = messages.length > 0;
 
@@ -29,14 +28,6 @@ function ChatArea({
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [hasMessages, messages]);
-
-  const handleScroll = (e) => {
-    // Keep handleScroll signature if needed by the div, but it's now empty. Or remove it entirely.
-  };
-
-  const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  };
 
   const send = (content = draft) => {
     const trimmed = content.trim();
@@ -106,8 +97,6 @@ function ChatArea({
         <Menu size={24} />
       </button>
       <div 
-        ref={scrollRef}
-        onScroll={handleScroll}
         className="chat-scroll-area hidden-scrollbar"
       >
         <div className="chat-messages-wrapper">

@@ -1,6 +1,7 @@
 import "./InputBox.css";
 import { ArrowUp, Square } from "lucide-react";
 import { useEffect, useRef } from "react";
+import AiModeSelector from "./AiModeSelector.jsx";
 
 function InputBox({
   value,
@@ -9,6 +10,10 @@ function InputBox({
   disabled,
   isGenerating,
   onStop,
+  selectedMode,
+  selectedProvider,
+  selectedModel,
+  onSelectionChange,
 }) {
   const textareaRef = useRef(null);
 
@@ -31,6 +36,15 @@ function InputBox({
       <div className="input-box-solid-border"></div>
 
       <div className="input-box-inner flex flex-col gap-1">
+        <div className="px-2 pt-1 pb-0.5 flex items-center justify-between">
+          <AiModeSelector
+            selectedMode={selectedMode}
+            selectedProvider={selectedProvider}
+            selectedModel={selectedModel}
+            onSelectionChange={onSelectionChange}
+          />
+        </div>
+
         <div className="input-box-layout">
           <div className="input-box-textarea-wrapper">
             <textarea
@@ -74,4 +88,5 @@ function InputBox({
   );
 }
 
-export default InputBox; 
+export default InputBox;
+ 
