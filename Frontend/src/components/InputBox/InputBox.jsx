@@ -1,7 +1,6 @@
 import "./InputBox.css";
 import { ArrowUp, Square } from "lucide-react";
 import { useEffect, useRef } from "react";
-import AiModeSelector from "./AiModeSelector.jsx";
 
 function InputBox({
   value,
@@ -10,10 +9,6 @@ function InputBox({
   disabled,
   isGenerating,
   onStop,
-  selectedMode = "talk",
-  selectedProvider = "openrouter",
-  selectedModel = "openai/gpt-oss-120b",
-  onSelectionChange
 }) {
   const textareaRef = useRef(null);
 
@@ -55,14 +50,7 @@ function InputBox({
             />
           </div>
 
-          <div className="input-box-btn-wrapper flex items-center gap-2">
-            <AiModeSelector
-              selectedMode={selectedMode}
-              selectedProvider={selectedProvider}
-              selectedModel={selectedModel}
-              onSelectionChange={onSelectionChange}
-            />
-
+          <div className="input-box-btn-wrapper">
             <button
               type="button"
               onClick={isGenerating ? onStop : submit}
