@@ -61,7 +61,7 @@ export async function streamChatMessage({
   signal,
 }) {
   const activeMode = mode || selectedMode || "talk";
-  const response = await fetch(`${API_BASE}/intellix/stream`, {
+  const response = await fetch(`${API_BASE}/stream`, {
     method: "POST",
     headers: await getAuthHeaders({ "Content-Type": "application/json" }),
     signal,
@@ -69,7 +69,7 @@ export async function streamChatMessage({
       chatId,
       message,
       mode: activeMode,
-      provider: provider || "openrouter",
+      provider: provider || "openai",
       model: model || "openai/gpt-oss-120b",
       selectedMode: activeMode,
       thinking: thinkingMode === "deep",
