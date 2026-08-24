@@ -58,20 +58,6 @@ function AiModeSelector({
     }
   };
 
-  const handleProviderSelect = (providerKey) => {
-    const providerObj = currentModeObj.providers[providerKey];
-    if (!providerObj) return;
-    const newModel = providerObj.models[0]?.id || selectedModel;
-
-    if (onSelectionChange) {
-      onSelectionChange({
-        mode: selectedMode,
-        provider: providerKey,
-        model: newModel
-      });
-    }
-  };
-
   const handleModelSelect = (modelId) => {
     if (onSelectionChange) {
       onSelectionChange({
@@ -137,35 +123,6 @@ function AiModeSelector({
                     <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
                       {mode.description}
                     </p>
-                  </div>
-                </button>
-              );
-            })}
-
-            <div className="my-2 border-t border-purple-500/20" />
-
-            {/* API Providers Section */}
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300/60 px-3 pt-1 pb-1">
-              API
-            </div>
-            {Object.entries(availableProviders).map(([pKey, pObj]) => {
-              const isSelected = selectedProvider === pKey;
-              return (
-                <button
-                  key={pKey}
-                  type="button"
-                  onClick={() => handleProviderSelect(pKey)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                    isSelected
-                      ? "bg-purple-500/15 text-purple-200 font-medium"
-                      : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 flex items-center justify-center">
-                      {isSelected && <Check size={14} className="text-purple-400 stroke-[2.5]" />}
-                    </div>
-                    <span>{pObj.name}</span>
                   </div>
                 </button>
               );
