@@ -113,13 +113,12 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
             {
               role: "system",
               content:
-                "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
+                "You are IntellixAI, a polished full-stack AI assistant. Provide clear, helpful answers. For greetings, answer warmly and briefly.",
             },
             ...mappedMessages,
           ],
           stream: true,
-          max_tokens: 1000,
-          reasoning: { enabled: true }
+          max_tokens: 1000
         });
 
         return withStreamFallback(stream, lastUserMsg, provider.name);

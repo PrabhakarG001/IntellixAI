@@ -92,7 +92,6 @@ export const handleChatStream = async (req, res) => {
   let request;
   const classifier = createStreamClassifier();
   let assistantContent = "";
-  let assistantThought = "";
 
   try {
     request = await buildChatRequest(req.body, req.user.uid);
@@ -123,9 +122,10 @@ export const handleChatStream = async (req, res) => {
 
     for await (const chunk of stream) {
       for (const token of classifyPayload(chunk, classifier)) {
-        if (token.type === "thought") assistantThought += token.content;
         if (token.type === "content") assistantContent += token.content;
-        sendSse(res, token);
+        if (token.type === "content") {
+          sendSse(res, token);
+        }
       }
 
       if (chunk.usage?.completionTokensDetails?.reasoningTokens) {
@@ -141,7 +141,7 @@ export const handleChatStream = async (req, res) => {
 
     const chat = await saveConversation(request, {
       content: assistantContent,
-      thought: assistantThought,
+      thought: "",
     }, req.user.uid);
 
     sendSse(res, { type: "done", chat: chat.toClient() });
@@ -158,7 +158,7 @@ export const handleChatStream = async (req, res) => {
 
     sendSse(res, {
       type: "error",
-      content: error?.message || "Streaming failed. Please try again.",
+      content: "Streaming failed. Please check your model API key and try again.",
     });
     res.end();
   }
