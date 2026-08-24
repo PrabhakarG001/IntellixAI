@@ -69,7 +69,7 @@ function InputBox({
                     : "input-box-btn-disabled",
               ].join(" ")}
             >
-              {isGenerating ? <Square size={16} /> : <ArrowUp size={19} />}
+              {isGenerating ? <Square size={16} /> : <ArrowUp size={20} strokeWidth={2.5} />}
             </button>
           </div>
         </div>

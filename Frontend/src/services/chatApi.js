@@ -61,21 +61,39 @@ export async function streamChatMessage({
   signal,
 }) {
   const activeMode = mode || selectedMode || "talk";
-  const response = await fetch(`${API_BASE}/stream`, {
-    method: "POST",
-    headers: await getAuthHeaders({ "Content-Type": "application/json" }),
-    signal,
-    body: JSON.stringify({
-      chatId,
-      message,
-      mode: activeMode,
-      provider: provider || "openai",
-      model: model || "openai/gpt-oss-120b",
-      selectedMode: activeMode,
-      thinking: thinkingMode === "deep",
-      thinkingMode,
-    }),
+  const requestHeaders = await getAuthHeaders({ "Content-Type": "application/json" });
+  const requestBody = JSON.stringify({
+    chatId,
+    message,
+    mode: activeMode,
+    provider: provider || "openai",
+    model: model || "openai/gpt-oss-120b",
+    selectedMode: activeMode,
+    thinking: thinkingMode === "deep",
+    thinkingMode,
   });
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/stream`, {
+      method: "POST",
+      headers: requestHeaders,
+      signal,
+      body: requestBody,
+    });
+
+    if (response.status === 404) {
+      response = await fetch(`${API_BASE}/chat/stream`, {
+        method: "POST",
+        headers: requestHeaders,
+        signal,
+        body: requestBody,
+      });
+    }
+  } catch (netError) {
+    if (netError.name === "AbortError") throw netError;
+    throw new Error("Cannot connect to backend server. Ensure backend server is running on port 5000.");
+  }
 
   if (!response.ok || !response.body) {
     const details = await safeReadError(response);
@@ -120,10 +138,20 @@ export async function consumeSse(body, handlers) {
 async function safeReadError(response) {
   try {
     const payload = await response.json();
-    return payload.details || payload.error || `Streaming failed (HTTP ${response.status}).`;
+    if (payload.details || payload.error) {
+      return payload.details || payload.error;
+    }
   } catch {
-    return `Streaming failed (HTTP ${response.status}).`;
+    // Non-JSON response (e.g. HTML from proxy)
   }
+
+  if (response.status === 404) {
+    return "Streaming endpoint not found (HTTP 404). Ensure backend server is running on port 5000.";
+  }
+  if (response.status === 502 || response.status === 503) {
+    return `Backend server unavailable (HTTP ${response.status}). Please check backend status.`;
+  }
+  return `Streaming failed (HTTP ${response.status}).`;
 }
 
 function parseSseEvent(event) {
