@@ -12,8 +12,8 @@ export const API_POOL = [
     id: "openai-primary",
     name: "OpenAI (GPT OSS 120B)",
     baseURL: "https://openrouter.ai/api/v1",
-    key: () => process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
-    model: () => process.env.OPENROUTER_MODEL || process.env.OPENAI_MODEL || "openai/gpt-oss-120b",
+    key: () => process.env.OPENROUTER_API_KEY,
+    model: () => process.env.OPENROUTER_MODEL || "openai/gpt-oss-120b",
     defaultHeaders: {
       "HTTP-Referer": "https://localhost",
       "X-Title": "IntellixAI"
@@ -46,8 +46,40 @@ async function* createMockStream(promptMessage) {
   }
 }
 
+async function* withStreamFallback(stream, promptMessage, providerName) {
+  let emittedContent = false;
+
+  try {
+    for await (const chunk of stream) {
+      if (chunk?.choices?.[0]?.delta?.content || chunk?.choices?.[0]?.delta?.reasoning) {
+        emittedContent = true;
+      }
+      yield chunk;
+    }
+  } catch (error) {
+    console.warn(`Provider ${providerName} stream failed:`, error.message || error);
+
+    if (!emittedContent) {
+      yield* createMockStream(promptMessage);
+      return;
+    }
+
+    yield {
+      choices: [
+        {
+          delta: {
+            content:
+              "\n\nThe model connection stopped unexpectedly before the response finished. Please retry in a moment.",
+          },
+        },
+      ],
+    };
+  }
+}
+
 export async function createFallbackStream({ messages, selectedMode = "talk", requestedModel, requestedProvider }) {
   const availablePool = API_POOL.filter(item => Boolean(item.key()));
+  const lastUserMsg = messages.filter(m => m.role === "user").pop()?.content || "";
 
   if (availablePool.length > 0) {
     for (let i = 0; i < availablePool.length; i++) {
@@ -90,7 +122,7 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
           reasoning: { enabled: true }
         });
 
-        return stream;
+        return withStreamFallback(stream, lastUserMsg, provider.name);
       } catch (error) {
         console.warn(`⚠️ Provider ${provider.name} failed:`, error.message || error);
       }
@@ -99,7 +131,6 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
 
   // Fallback stream when API keys are unconfigured or provider API fails (e.g. "User not found")
   console.log("ℹ️ Returning Intellix AI fallback stream.");
-  const lastUserMsg = messages.filter(m => m.role === "user").pop()?.content || "";
   return createMockStream(lastUserMsg);
 }
 
