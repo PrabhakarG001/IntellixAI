@@ -6,6 +6,7 @@ import MainWorkspace from "./components/MainWorkspace/MainWorkspace.jsx";
 import Sidebar from "./components/Sidebar/Sidebar.jsx";
 import LoginPage from "./pages/LoginPage/LoginPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute.jsx";
+import CustomCursor from "./components/CustomCursor/CustomCursor.jsx";
 import { useChat } from "./hooks/useChat.js";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./services/firebase.js";
@@ -80,7 +81,8 @@ function App() {
           element={
             <ProtectedRoute user={user} authLoading={authLoading}>
               <div className="dark-veil-app relative h-screen w-full overflow-hidden bg-[#0a0514] text-slate-100 font-sans">
-              <div className="fixed inset-0 z-0 pointer-events-none">
+                <CustomCursor isLoading={isGenerating} />
+                <div className="fixed inset-0 z-0 pointer-events-none">
                   <LightRays
                     raysOrigin="top-center"
                     raysColor="#A855F7"

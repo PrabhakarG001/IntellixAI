@@ -1,0 +1,145 @@
+/* Custom Cursor Global Rules */
+@media (pointer: fine) {
+  *,
+  *::before,
+  *::after,
+  html,
+  body,
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    cursor: none !important;
+  }
+}
+
+/* Custom Cursor Root Container */
+.custom-cursor-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999999;
+  overflow: hidden;
+}
+
+/* Primary Cursor Element */
+.custom-cursor-pointer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin-top: -2px;
+  margin-left: -2px;
+  pointer-events: none;
+  transition: transform 0ms linear, scale 180ms ease, opacity 180ms ease;
+  will-change: transform;
+  filter: drop-shadow(0 2px 8px rgba(168, 85, 247, 0.4));
+}
+
+.cursor-arrow-svg {
+  display: block;
+  transition: transform 180ms ease, fill 200ms ease;
+}
+
+.cursor-svg-glow {
+  filter: blur(4px);
+}
+
+.cursor-svg-body {
+  transition: fill 200ms ease, stroke 200ms ease;
+}
+
+/* Outer Halo Follower Ring */
+.custom-cursor-follower {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
+  margin-left: -16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(168, 85, 247, 0.5);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, rgba(168, 85, 247, 0) 70%);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.35);
+  pointer-events: none;
+  transition: transform 0ms linear, width 220ms ease, height 220ms ease, margin 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+  will-change: transform;
+  backdrop-filter: blur(1px);
+}
+
+/* Hover/Link State (Pointer) */
+.cursor-state-pointer .custom-cursor-follower {
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  margin-left: -22px;
+  border-color: rgba(168, 85, 247, 0.85);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.22) 0%, rgba(168, 85, 247, 0.02) 75%);
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.6);
+}
+
+.cursor-state-pointer .cursor-svg-body {
+  fill: #c084fc;
+}
+
+/* Text Selection State */
+.cursor-state-text .custom-cursor-follower {
+  width: 20px;
+  height: 28px;
+  margin-top: -14px;
+  margin-left: -10px;
+  border-radius: 6px;
+  border-color: rgba(168, 85, 247, 0.7);
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.cursor-ibeam {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 22px;
+  margin-top: -11px;
+  margin-left: -6px;
+}
+
+.cursor-ibeam-line {
+  width: 2px;
+  height: 18px;
+  background-color: #A855F7;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+}
+
+/* Active Click State */
+.cursor-active .custom-cursor-follower {
+  transform: scale(0.75) !important;
+  border-color: #d8b4fe;
+  box-shadow: 0 0 30px rgba(192, 132, 252, 0.9);
+}
+
+.cursor-active .custom-cursor-pointer {
+  transform: scale(0.85) !important;
+}
+
+/* Loading State Spinner Orbit */
+.cursor-loading .custom-cursor-follower {
+  animation: cursor-spin 1.2s linear infinite;
+  border-top-color: #A855F7;
+  border-right-color: transparent;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.7);
+}
+
+@keyframes cursor-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
