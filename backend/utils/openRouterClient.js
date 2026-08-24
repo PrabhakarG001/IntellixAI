@@ -82,6 +82,10 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
     } catch (error) {
       console.warn(`⚠️ Provider ${provider.name} failed:`, error.message || error);
       if (i === orderedPool.length - 1) {
+        const msg = String(error.message || "");
+        if (msg.toLowerCase().includes("user not found") || error.status === 404) {
+          throw new Error("OpenRouter/OpenAI API key error ('User not found'). Please check OPENROUTER_API_KEY in backend .env.");
+        }
         throw error;
       }
     }

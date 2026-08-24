@@ -4,9 +4,15 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 async function getAuthHeaders(existingHeaders = {}) {
   const headers = { ...existingHeaders };
-  if (auth.currentUser) {
-    const token = await auth.currentUser.getIdToken();
-    headers.Authorization = `Bearer ${token}`;
+  try {
+    if (auth.currentUser) {
+      const token = await auth.currentUser.getIdToken(true).catch(() => null);
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+  } catch (error) {
+    console.warn("Could not fetch ID token, proceeding without auth header:", error);
   }
   return headers;
 }
