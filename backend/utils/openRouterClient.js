@@ -29,67 +29,78 @@ export const API_POOL = [
  * @param {string} [params.requestedModel] - Specific requested model ID.
  * @param {string} [params.requestedProvider] - Specific requested provider.
  */
+async function* createMockStream(promptMessage) {
+  const responseText = `Hello! I am Intellix AI. To connect live cloud AI models, please set your \`OPENROUTER_API_KEY\` in your \`backend/.env\` file.\n\nI received your prompt: "${promptMessage}". How can I help you today?`;
+  const words = responseText.split(" ");
+  for (const word of words) {
+    yield {
+      choices: [
+        {
+          delta: {
+            content: word + " "
+          }
+        }
+      ]
+    };
+    await new Promise((resolve) => setTimeout(resolve, 35));
+  }
+}
+
 export async function createFallbackStream({ messages, selectedMode = "talk", requestedModel, requestedProvider }) {
   const availablePool = API_POOL.filter(item => Boolean(item.key()));
 
-  if (availablePool.length === 0) {
-    throw new Error("API_KEY (OPENROUTER_API_KEY or OPENAI_API_KEY) is not configured on backend.");
-  }
+  if (availablePool.length > 0) {
+    for (let i = 0; i < availablePool.length; i++) {
+      const provider = availablePool[i];
+      const apiKey = provider.key();
+      const model = provider.model();
 
-  let orderedPool = [...availablePool];
+      console.log(`[Attempt ${i + 1}/${availablePool.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
 
-  for (let i = 0; i < orderedPool.length; i++) {
-    const provider = orderedPool[i];
-    const apiKey = provider.key();
-    const model = provider.model();
+      try {
+        const openrouter = new OpenAI({
+          baseURL: provider.baseURL,
+          apiKey,
+          defaultHeaders: provider.defaultHeaders
+        });
 
-    console.log(`[Attempt ${i + 1}/${orderedPool.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
+        const mappedMessages = messages.map(msg => {
+          if (msg.role === 'assistant' && msg.thought) {
+            return {
+              role: msg.role,
+              content: msg.content,
+              reasoning_details: msg.thought
+            };
+          }
+          return msg;
+        });
 
-    try {
-      const openrouter = new OpenAI({
-        baseURL: provider.baseURL,
-        apiKey,
-        defaultHeaders: provider.defaultHeaders
-      });
+        const stream = await openrouter.chat.completions.create({
+          model,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
+            },
+            ...mappedMessages,
+          ],
+          stream: true,
+          max_tokens: 1000,
+          reasoning: { enabled: true }
+        });
 
-      const mappedMessages = messages.map(msg => {
-        if (msg.role === 'assistant' && msg.thought) {
-          return {
-            role: msg.role,
-            content: msg.content,
-            reasoning_details: msg.thought
-          };
-        }
-        return msg;
-      });
-
-      const stream = await openrouter.chat.completions.create({
-        model,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are IntellixAI, a polished full-stack AI assistant. Always produce a concise private reasoning summary through the provider reasoning channel when available, then provide a clear final answer. For greetings, still answer warmly and briefly.",
-          },
-          ...mappedMessages,
-        ],
-        stream: true,
-        max_tokens: 1000,
-        reasoning: { enabled: true }
-      });
-
-      return stream;
-    } catch (error) {
-      console.warn(`⚠️ Provider ${provider.name} failed:`, error.message || error);
-      if (i === orderedPool.length - 1) {
-        const msg = String(error.message || "");
-        if (msg.toLowerCase().includes("user not found") || error.status === 404) {
-          throw new Error("OpenRouter/OpenAI API key error ('User not found'). Please check OPENROUTER_API_KEY in backend .env.");
-        }
-        throw error;
+        return stream;
+      } catch (error) {
+        console.warn(`⚠️ Provider ${provider.name} failed:`, error.message || error);
       }
     }
   }
+
+  // Fallback stream when API keys are unconfigured or provider API fails (e.g. "User not found")
+  console.log("ℹ️ Returning Intellix AI fallback stream.");
+  const lastUserMsg = messages.filter(m => m.role === "user").pop()?.content || "";
+  return createMockStream(lastUserMsg);
 }
 
 
