@@ -1,6 +1,13 @@
 import { auth } from "./firebase.js";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const DEFAULT_API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "http://localhost:5000/api"
+    : "/api");
+
+let activeApiBase = DEFAULT_API_BASE;
 
 async function getAuthHeaders(existingHeaders = {}) {
   const headers = { ...existingHeaders };
@@ -19,7 +26,7 @@ async function getAuthHeaders(existingHeaders = {}) {
 
 
 export async function fetchChats() {
-  const response = await fetch(`${API_BASE}/chats`, { 
+  const response = await fetch(`${activeApiBase}/chats`, { 
     headers: await getAuthHeaders(),
     cache: "no-store" 
   });
@@ -28,7 +35,7 @@ export async function fetchChats() {
 }
 
 export async function fetchChatById(chatId) {
-  const response = await fetch(`${API_BASE}/chat/${chatId}`, { 
+  const response = await fetch(`${activeApiBase}/chat/${chatId}`, { 
     headers: await getAuthHeaders(),
     cache: "no-store"
   });
@@ -37,18 +44,18 @@ export async function fetchChatById(chatId) {
 }
 
 export async function createChat() {
-  const response = await fetch(`${API_BASE}/new-chat`, { method: "POST", headers: await getAuthHeaders() });
+  const response = await fetch(`${activeApiBase}/new-chat`, { method: "POST", headers: await getAuthHeaders() });
   if (!response.ok) throw new Error("Unable to create a new chat.");
   return response.json();
 }
 
 export async function deleteChatById(chatId) {
-  const response = await fetch(`${API_BASE}/chat/${chatId}`, { method: "DELETE", headers: await getAuthHeaders() });
+  const response = await fetch(`${activeApiBase}/chat/${chatId}`, { method: "DELETE", headers: await getAuthHeaders() });
   if (!response.ok) throw new Error("Unable to delete this search.");
 }
 
 export async function clearChatById(chatId) {
-  const response = await fetch(`${API_BASE}/chat/${chatId}/clear`, {
+  const response = await fetch(`${activeApiBase}/chat/${chatId}/clear`, {
     method: "POST",
     headers: await getAuthHeaders(),
   });
@@ -80,25 +87,32 @@ export async function streamChatMessage({
   });
 
   let response;
-  try {
-    response = await fetch(`${API_BASE}/stream`, {
-      method: "POST",
-      headers: requestHeaders,
-      signal,
-      body: requestBody,
-    });
+  const endpointsToTry = [
+    `${activeApiBase}/stream`,
+    `${activeApiBase}/chat/stream`,
+    "http://localhost:5000/api/stream",
+    "http://localhost:5000/stream",
+  ];
 
-    if (response.status === 404) {
-      response = await fetch(`${API_BASE}/chat/stream`, {
+  for (const url of endpointsToTry) {
+    try {
+      response = await fetch(url, {
         method: "POST",
         headers: requestHeaders,
         signal,
         body: requestBody,
       });
+
+      if (response.ok) {
+        // Update activeApiBase to the working base endpoint
+        if (url.startsWith("http://localhost:5000")) {
+          activeApiBase = "http://localhost:5000/api";
+        }
+        break;
+      }
+    } catch (netError) {
+      if (netError.name === "AbortError") throw netError;
     }
-  } catch (netError) {
-    if (netError.name === "AbortError") throw netError;
-    throw new Error("Cannot connect to backend server. Ensure backend server is running on port 5000.");
   }
 
   if (!response.ok || !response.body) {
