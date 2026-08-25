@@ -271,15 +271,18 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
             content: message.content || "Generation stopped.",
           }));
         } else {
-          setError(streamError.message);
+          const rawMsg = streamError.message || "";
+          const friendlyMsg = rawMsg.toLowerCase().includes("user not found")
+            ? "OpenRouter / OpenAI API key error ('User not found'). Please check OPENROUTER_API_KEY in backend .env."
+            : rawMsg;
+          setError(friendlyMsg);
           patchMessage(chatId, assistantMessage.id, (prev) => ({
             ...prev,
             streaming: false,
             error: true,
             content:
               prev.content ||
-              `Streaming failed: ${streamError.message}` ||
-              "The streaming request failed. Check backend keys and try again.",
+              `Streaming failed: ${friendlyMsg}`,
           }));
         }
       } finally {

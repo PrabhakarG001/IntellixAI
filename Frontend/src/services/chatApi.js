@@ -158,8 +158,12 @@ export async function consumeSse(body, handlers) {
 async function safeReadError(response) {
   try {
     const payload = await response.json();
-    if (payload.details || payload.error) {
-      return payload.details || payload.error;
+    let msg = payload.details || payload.error;
+    if (msg) {
+      if (typeof msg === "string" && msg.toLowerCase().includes("user not found")) {
+        return "OpenRouter / OpenAI API key error ('User not found'). Please check OPENROUTER_API_KEY in backend .env.";
+      }
+      return msg;
     }
   } catch {
     // Non-JSON response (e.g. HTML from proxy)
