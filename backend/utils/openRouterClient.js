@@ -6,7 +6,7 @@ export function getOpenRouterModel() {
   return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
 }
 
-// Dedicated OpenAI API Pool configuration
+
 export const API_POOL = [
   {
     id: "openai-primary",
