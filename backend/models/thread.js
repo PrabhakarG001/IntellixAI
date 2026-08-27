@@ -20,43 +20,88 @@ const ThreadSchema = new mongoose.Schema({
 // Avoid OverwriteModelError
 const ThreadModel = mongoose.models.Thread || mongoose.model("Thread", ThreadSchema);
 
+// In-memory fallback map when MongoDB is disconnected: key = `${userId}:${id}`
+const memoryStore = new Map();
+
+function isMongoConnected() {
+  return mongoose.connection.readyState === 1;
+}
+
 export class Thread {
   constructor(doc) {
     this.id = doc.id;
     this.userId = doc.userId;
     this.title = doc.title;
-    this.createdAt = doc.createdAt;
-    this.updatedAt = doc.updatedAt;
+    this.createdAt = doc.createdAt || new Date();
+    this.updatedAt = doc.updatedAt || new Date();
     this.messages = doc.messages || [];
   }
 
   static async all(userId) {
-    const docs = await ThreadModel.find({ userId }).sort({ updatedAt: -1 }).lean();
-    return docs.map(doc => new Thread(doc));
+    if (isMongoConnected()) {
+      try {
+        const docs = await ThreadModel.find({ userId }).sort({ updatedAt: -1 }).lean();
+        return docs.map(doc => new Thread(doc));
+      } catch (err) {
+        console.warn("MongoDB find failed, falling back to memory store:", err.message);
+      }
+    }
+    const results = [];
+    for (const [, val] of memoryStore.entries()) {
+      if (val.userId === userId) {
+        results.push(new Thread(val));
+      }
+    }
+    return results.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   }
 
   static async findById(id, userId) {
-    const doc = await ThreadModel.findOne({ id, userId }).lean();
-    return doc ? new Thread(doc) : null;
+    if (isMongoConnected()) {
+      try {
+        const doc = await ThreadModel.findOne({ id, userId }).lean();
+        if (doc) return new Thread(doc);
+      } catch (err) {
+        console.warn("MongoDB findById failed, falling back to memory store:", err.message);
+      }
+    }
+    const memDoc = memoryStore.get(`${userId}:${id}`) || memoryStore.get(`guest-user:${id}`);
+    return memDoc ? new Thread(memDoc) : null;
   }
 
   static async upsert({ id, userId, title, messages }) {
     const normalizedMessages = normalizeMessages(messages);
-    const updateData = {
-      messages: normalizedMessages,
-    };
-    
-    // Only update title if provided or if it's a new chat, else derive from messages
-    if (title) updateData.title = sanitizeTitle(title);
-    else updateData.title = titleFromMessages(normalizedMessages);
+    const resolvedTitle = title ? sanitizeTitle(title) : titleFromMessages(normalizedMessages);
+    const now = new Date();
 
-    const doc = await ThreadModel.findOneAndUpdate(
-      { id, userId },
-      { $set: updateData, $setOnInsert: { id, userId } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    ).lean();
-    
-    return new Thread(doc);
+    const memKey = `${userId}:${id}`;
+    const existing = memoryStore.get(memKey);
+    const record = {
+      id,
+      userId,
+      title: resolvedTitle,
+      messages: normalizedMessages,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    };
+    memoryStore.set(memKey, record);
+
+    if (isMongoConnected()) {
+      try {
+        const updateData = {
+          title: resolvedTitle,
+          messages: normalizedMessages,
+        };
+        const doc = await ThreadModel.findOneAndUpdate(
+          { id, userId },
+          { $set: updateData, $setOnInsert: { id, userId } },
+          { new: true, upsert: true, setDefaultsOnInsert: true }
+        ).lean();
+        return new Thread(doc);
+      } catch (err) {
+        console.warn("MongoDB upsert failed, using memory record:", err.message);
+      }
+    }
+    return new Thread(record);
   }
 
   static async create({ id = randomUUID(), userId, title = "New chat", messages = [] } = {}) {
@@ -64,7 +109,15 @@ export class Thread {
   }
 
   static async delete(id, userId) {
-    await ThreadModel.deleteOne({ id, userId });
+    memoryStore.delete(`${userId}:${id}`);
+    memoryStore.delete(`guest-user:${id}`);
+    if (isMongoConnected()) {
+      try {
+        await ThreadModel.deleteOne({ id, userId });
+      } catch (err) {
+        console.warn("MongoDB delete failed:", err.message);
+      }
+    }
   }
 
   async save() {

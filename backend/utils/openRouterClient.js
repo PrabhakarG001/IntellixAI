@@ -1,11 +1,62 @@
 import OpenAI from 'openai';
 
-const DEFAULT_MODEL = "openai/gpt-oss-120b";
+const DEFAULT_OPENROUTER_MODEL = "openai/gpt-oss-120b";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
 export function getOpenRouterModel() {
-  return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+  return process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
 }
 
+export function getApiProviders() {
+  const providers = [];
+  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+
+  // If OPENROUTER_API_KEY is provided
+  if (openrouterKey && openrouterKey !== "replace_with_your_key") {
+    const isDirectOpenAiKey = openrouterKey.startsWith("sk-proj-") || (!openrouterKey.startsWith("sk-or-") && openrouterKey.length < 60);
+    if (isDirectOpenAiKey) {
+      providers.push({
+        id: "openai-direct",
+        name: "OpenAI",
+        baseURL: "https://api.openai.com/v1",
+        apiKey: openrouterKey,
+        defaultModel: process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
+        defaultHeaders: {}
+      });
+    } else {
+      providers.push({
+        id: "openrouter-primary",
+        name: "OpenRouter (GPT OSS 120B)",
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: openrouterKey,
+        defaultModel: process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL,
+        defaultHeaders: {
+          "HTTP-Referer": "https://localhost",
+          "X-Title": "IntellixAI"
+        }
+      });
+    }
+  }
+
+  // If OPENAI_API_KEY is provided
+  if (openaiKey && openaiKey !== "replace_with_your_key") {
+    const isOpenRouterKey = openaiKey.startsWith("sk-or-");
+    providers.push({
+      id: "openai-secondary",
+      name: isOpenRouterKey ? "OpenRouter" : "OpenAI",
+      baseURL: isOpenRouterKey ? "https://openrouter.ai/api/v1" : "https://api.openai.com/v1",
+      apiKey: openaiKey,
+      defaultModel: isOpenRouterKey ? (process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL) : (process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL),
+      defaultHeaders: isOpenRouterKey ? {
+        "HTTP-Referer": "https://localhost",
+        "X-Title": "IntellixAI"
+      } : {}
+    });
+  }
+
+  return providers;
+}
 
 export const API_POOL = [
   {
@@ -78,19 +129,19 @@ async function* withStreamFallback(stream, promptMessage, providerName) {
 }
 
 export async function createFallbackStream({ messages, selectedMode = "talk", requestedModel, requestedProvider }) {
-  const availablePool = API_POOL.filter(item => Boolean(item.key()));
+  const providers = getApiProviders();
   const lastUserMsg = messages.filter(m => m.role === "user").pop()?.content || "";
 
-  if (availablePool.length > 0) {
-    for (let i = 0; i < availablePool.length; i++) {
-      const provider = availablePool[i];
-      const apiKey = provider.key();
-      const model = provider.model();
+  if (providers.length > 0) {
+    for (let i = 0; i < providers.length; i++) {
+      const provider = providers[i];
+      const apiKey = provider.apiKey;
+      const model = requestedModel || provider.defaultModel;
 
-      console.log(`[Attempt ${i + 1}/${availablePool.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
+      console.log(`[Attempt ${i + 1}/${providers.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
 
       try {
-        const openrouter = new OpenAI({
+        const client = new OpenAI({
           baseURL: provider.baseURL,
           apiKey,
           defaultHeaders: provider.defaultHeaders
@@ -107,7 +158,7 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
           return msg;
         });
 
-        const stream = await openrouter.chat.completions.create({
+        const stream = await client.chat.completions.create({
           model,
           messages: [
             {

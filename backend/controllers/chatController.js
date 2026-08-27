@@ -120,10 +120,15 @@ export const handleChatStream = async (req, res) => {
 
     stream = await createModelStream(request);
 
+    let assistantThought = "";
+
     for await (const chunk of stream) {
       for (const token of classifyPayload(chunk, classifier)) {
-        if (token.type === "content") assistantContent += token.content;
         if (token.type === "content") {
+          assistantContent += token.content;
+          sendSse(res, token);
+        } else if (token.type === "thought") {
+          assistantThought += token.content;
           sendSse(res, token);
         }
       }
@@ -141,7 +146,7 @@ export const handleChatStream = async (req, res) => {
 
     const chat = await saveConversation(request, {
       content: assistantContent,
-      thought: "",
+      thought: assistantThought,
     }, req.user.uid);
 
     sendSse(res, { type: "done", chat: chat.toClient() });
