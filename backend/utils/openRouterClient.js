@@ -9,25 +9,19 @@ export function getOpenRouterModel() {
 
 export function getApiProviders() {
   const providers = [];
-  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const cleanKey = (k) => k ? k.replace(/^["'`]|["'`]$/g, '').trim() : '';
+  const openrouterKey = cleanKey(process.env.OPENROUTER_API_KEY);
+  const openaiKey = cleanKey(process.env.OPENAI_API_KEY);
 
   // If OPENROUTER_API_KEY is provided
   if (openrouterKey && openrouterKey !== "replace_with_your_key") {
-    const isDirectOpenAiKey = openrouterKey.startsWith("sk-proj-") || (!openrouterKey.startsWith("sk-or-") && openrouterKey.length < 60);
-    if (isDirectOpenAiKey) {
-      providers.push({
-        id: "openai-direct",
-        name: "OpenAI",
-        baseURL: "https://api.openai.com/v1",
-        apiKey: openrouterKey,
-        defaultModel: process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
-        defaultHeaders: {}
-      });
-    } else {
+    const isDirectOpenAiKey = openrouterKey.startsWith("sk-proj-") || (!openrouterKey.startsWith("sk-or-") && !openrouterKey.startsWith("sk-"));
+    const isOpenRouterKey = openrouterKey.startsWith("sk-or-");
+
+    if (isOpenRouterKey || (!openrouterKey.startsWith("sk-proj-") && openrouterKey.length > 50)) {
       providers.push({
         id: "openrouter-primary",
-        name: "OpenRouter (GPT OSS 120B)",
+        name: "OpenRouter",
         baseURL: "https://openrouter.ai/api/v1",
         apiKey: openrouterKey,
         defaultModel: process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL,
@@ -35,6 +29,15 @@ export function getApiProviders() {
           "HTTP-Referer": "https://localhost",
           "X-Title": "IntellixAI"
         }
+      });
+    } else {
+      providers.push({
+        id: "openai-direct",
+        name: "OpenAI",
+        baseURL: "https://api.openai.com/v1",
+        apiKey: openrouterKey,
+        defaultModel: process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
+        defaultHeaders: {}
       });
     }
   }
