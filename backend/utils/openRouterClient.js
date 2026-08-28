@@ -131,6 +131,12 @@ async function* withStreamFallback(stream, promptMessage, providerName) {
   }
 }
 
+const OPENROUTER_FALLBACK_MODELS = [
+  "openai/gpt-oss-120b",
+  "liquid/lfm-2.5-2.6b:free",
+  "nvidia/nemotron-3.5-lightning:free"
+];
+
 export async function createFallbackStream({ messages, selectedMode = "talk", requestedModel, requestedProvider }) {
   const providers = getApiProviders();
   const lastUserMsg = messages.filter(m => m.role === "user").pop()?.content || "";
@@ -139,50 +145,56 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
     for (let i = 0; i < providers.length; i++) {
       const provider = providers[i];
       const apiKey = provider.apiKey;
-      const model = requestedModel || provider.defaultModel;
+      const primaryModel = requestedModel || provider.defaultModel;
+      
+      const modelsToTry = provider.id.includes("openrouter")
+        ? [primaryModel, ...OPENROUTER_FALLBACK_MODELS.filter(m => m !== primaryModel)]
+        : [primaryModel];
 
-      console.log(`[Attempt ${i + 1}/${providers.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
+      for (const model of modelsToTry) {
+        console.log(`[Attempt ${i + 1}/${providers.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
 
-      try {
-        const client = new OpenAI({
-          baseURL: provider.baseURL,
-          apiKey,
-          defaultHeaders: provider.defaultHeaders
-        });
+        try {
+          const client = new OpenAI({
+            baseURL: provider.baseURL,
+            apiKey,
+            defaultHeaders: provider.defaultHeaders
+          });
 
-        const mappedMessages = messages.map(msg => {
-          if (msg.role === 'assistant' && msg.thought) {
-            return {
-              role: msg.role,
-              content: msg.content,
-              reasoning_details: msg.thought
-            };
-          }
-          return msg;
-        });
+          const mappedMessages = messages.map(msg => {
+            if (msg.role === 'assistant' && msg.thought) {
+              return {
+                role: msg.role,
+                content: msg.content,
+                reasoning_details: msg.thought
+              };
+            }
+            return msg;
+          });
 
-        const stream = await client.chat.completions.create({
-          model,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are IntellixAI, a polished full-stack AI assistant. Provide clear, helpful answers. For greetings, answer warmly and briefly.",
-            },
-            ...mappedMessages,
-          ],
-          stream: true,
-          max_tokens: 1000
-        });
+          const stream = await client.chat.completions.create({
+            model,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are IntellixAI, a polished full-stack AI assistant. Provide clear, helpful answers. For greetings, answer warmly and briefly.",
+              },
+              ...mappedMessages,
+            ],
+            stream: true,
+            max_tokens: 1000
+          });
 
-        return withStreamFallback(stream, lastUserMsg, provider.name);
-      } catch (error) {
-        console.warn(`⚠️ Provider ${provider.name} failed:`, error.message || error);
+          return withStreamFallback(stream, lastUserMsg, provider.name);
+        } catch (error) {
+          console.warn(`⚠️ Provider ${provider.name} with model ${model} failed:`, error.message || error);
+        }
       }
     }
   }
 
-  // Fallback stream when API keys are unconfigured or provider API fails (e.g. "User not found")
+  // Fallback stream when API keys are unconfigured or provider API fails
   console.log("ℹ️ Returning Intellix AI fallback stream.");
   return createMockStream(lastUserMsg);
 }
