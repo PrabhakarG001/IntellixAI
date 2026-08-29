@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-
+import { OpenRouter } from '@openrouter/sdk';
 const DEFAULT_OPENROUTER_MODEL = "openai/gpt-oss-120b";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
@@ -155,12 +155,7 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
         console.log(`[Attempt ${i + 1}/${providers.length}] Streaming via ${provider.name} (${model}) [Mode: ${selectedMode}]...`);
 
         try {
-          const client = new OpenAI({
-            baseURL: provider.baseURL,
-            apiKey,
-            defaultHeaders: provider.defaultHeaders
-          });
-
+          let stream;
           const mappedMessages = messages.map(msg => {
             if (msg.role === 'assistant' && msg.thought) {
               return {
@@ -172,19 +167,37 @@ export async function createFallbackStream({ messages, selectedMode = "talk", re
             return msg;
           });
 
-          const stream = await client.chat.completions.create({
-            model,
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are IntellixAI, a polished full-stack AI assistant. Provide clear, helpful answers. For greetings, answer warmly and briefly.",
-              },
-              ...mappedMessages,
-            ],
-            stream: true,
-            max_tokens: 1000
-          });
+          const systemPrompt = {
+            role: "system",
+            content: "You are IntellixAI, a polished full-stack AI assistant. Provide clear, helpful answers. For greetings, answer warmly and briefly."
+          };
+
+          if (provider.name === "OpenRouter") {
+            const client = new OpenRouter({
+              apiKey
+            });
+
+            stream = await client.chat.send({
+              chatRequest: {
+                model,
+                messages: [systemPrompt, ...mappedMessages],
+                stream: true
+              }
+            });
+          } else {
+            const client = new OpenAI({
+              baseURL: provider.baseURL,
+              apiKey,
+              defaultHeaders: provider.defaultHeaders
+            });
+
+            stream = await client.chat.completions.create({
+              model,
+              messages: [systemPrompt, ...mappedMessages],
+              stream: true,
+              max_tokens: 1000
+            });
+          }
 
           return withStreamFallback(stream, lastUserMsg, provider.name);
         } catch (error) {
