@@ -1,3 +1,24 @@
+.login-back-arrow {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #f1f5f9;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.login-back-arrow:focus-visible {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
 /* Loader */
 .login-page-loader {
   display: flex;
@@ -6,30 +27,7 @@
   align-items: center;
   justify-content: center;
   background-color: #0a0514;
-  color: #f1f5f9;
 }
-
-.auth-back-button {
-  position: fixed;
-  top: max(16px, env(safe-area-inset-top));
-  left: max(16px, env(safe-area-inset-left));
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 48px;
-  min-height: 48px;
-  padding: 10px 14px;
-  color: #f8fafc;
-  background: #241239;
-  border: 1px solid #c084fc;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.auth-back-button:hover { background: #4c1d75; }
-.auth-back-button:focus-visible { outline: 3px solid #e9d5ff; outline-offset: 4px; }
 
 /* Page Container */
 .login-page-container {
@@ -65,7 +63,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 88px 24px 32px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 /* Login Card */

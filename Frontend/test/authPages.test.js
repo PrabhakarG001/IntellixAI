@@ -23,9 +23,9 @@ function render(Component, props = {}) {
 test('login and session-loading screens render an accessible non-submit back arrow', () => {
   for (const authLoading of [false, true]) {
     const html = render(LoginPage, { user: null, authLoading });
-    assert.match(html, /<button type="button" class="auth-back-button" aria-label="Back"/);
+    assert.match(html, /<button type="button" class="login-back-arrow" aria-label="Back"/);
     assert.match(html, /lucide-arrow-left/);
-    assert.match(html, /<span>Back<\/span>/);
+    assert.match(html, /aria-hidden="true"/);
   }
 });
 

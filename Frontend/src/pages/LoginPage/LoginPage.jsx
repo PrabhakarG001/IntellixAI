@@ -4,13 +4,27 @@ import { useNavigate } from "react-router-dom";
 import { loginWithGoogle, firebaseConfigurationError } from "../../services/firebase.js";
 import LightRays from "../../components/LightRays/LightRays.jsx";
 import DotField from "../../components/DotField/DotField.jsx";
-import AuthBackButton from './AuthBackButton.jsx';
+import { ArrowLeft } from "lucide-react";
 import { authErrorMessage } from '../../services/authFlow.js';
 
 export default function LoginPage({ user, authLoading, authError = '' }) {
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+
+  const backArrow = (
+    <button
+      type="button"
+      className="login-back-arrow"
+      aria-label="Back"
+      onClick={() => {
+        if (window.history.state?.idx > 0) navigate(-1);
+        else navigate("/", { replace: true });
+      }}
+    >
+      <ArrowLeft size={24} aria-hidden="true" />
+    </button>
+  );
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -34,15 +48,14 @@ export default function LoginPage({ user, authLoading, authError = '' }) {
   if (authLoading || user) {
     return (
       <div className="login-page-loader">
-        <AuthBackButton />
-        <p role="status">Verifying session...</p>
+        {backArrow}
       </div>
     );
   }
 
   return (
     <div className="login-page-container">
-      <AuthBackButton />
+      {backArrow}
       <div className="login-page-bg-layer">
         <LightRays
           raysOrigin="top-center"
