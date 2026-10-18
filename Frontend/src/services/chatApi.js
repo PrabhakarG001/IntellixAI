@@ -3,6 +3,7 @@ import { auth } from "./firebase.js";
 const activeApiBase = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
 async function getAuthHeaders(existingHeaders = {}) {
+  if (!auth) throw new Error("Sign-in is unavailable. Please contact the site administrator.");
   const headers = { ...existingHeaders };
   try {
     if (auth.currentUser) {

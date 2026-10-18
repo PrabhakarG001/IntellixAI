@@ -144,6 +144,8 @@ VITE_FIREBASE_APP_ID=your_firebase_app_id
 
 These Firebase web settings are public browser configuration, not backend credentials. Never put `MINIMAX_API_KEY` in a frontend environment file. Enable Google sign-in and authorize the app's hostname in the matching Firebase project.
 
+For hosted builds (including Vercel), add the four `VITE_FIREBASE_*` variables above in the hosting project's environment settings for each deployed environment (Production and/or Preview). Local `.env.local` files are ignored by Git and are not uploaded. Vite embeds these values at build time: redeploy after saving them, or restart Vite after changing local settings. Missing configuration displays a sign-in unavailable message and disables login; it does not allow unauthenticated access. See [Vite environment variables](https://vite.dev/guide/env-and-mode).
+
 ### Configure the backend
 
 Create `backend/.env` if it does not exist, then edit it locally. Preserve existing environment files.
@@ -290,6 +292,7 @@ Dependency audit on October 18, 2026: the backend has no reported advisories; th
 | `MINIMAX_QUOTA` / 503 | Check MiniMax balance and quota. |
 | HTTP 429 | Wait for the provider rate limit to clear. |
 | HTTP 401 | Sign in again; verify both Firebase project configurations. |
+| Sign-in unavailable / missing `VITE_FIREBASE_*` | Set all four required frontend Firebase settings in `.env.local` or the hosting build environment, then restart or rebuild and redeploy. Setting them only in `backend/.env` has no effect on Vite. |
 | CORS rejection / 403 | Match the frontend scheme, hostname, and port in `CLIENT_ORIGIN`. |
 | HTTP 409 | Wait for or stop the active generation in this thread. |
 | Invalid stream, HTML, or network failure | Check backend availability and `/api` routing. A frontend-only host cannot serve Express. |

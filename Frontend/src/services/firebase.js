@@ -1,20 +1,21 @@
-import { createFirebaseConfig } from "./firebaseConfig.js";
+import { initializeFirebaseAuth } from "./firebaseConfig.js";
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-const firebaseConfig = createFirebaseConfig(import.meta.env);
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 
-const app = initializeApp(firebaseConfig);
-if (typeof window !== "undefined") {
+const state = initializeFirebaseAuth(import.meta.env, initializeApp, getAuth);
+export const auth = state.auth;
+export const firebaseConfigurationError = state.configurationError;
+const app = state.app;
+if (app && typeof window !== "undefined") {
   isSupported().then(supported => { if (supported) getAnalytics(app); }).catch(() => {});
 }
 
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
-
-export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 export const loginWithGoogle = async () => {
+  if (!auth) throw new Error('Sign-in is unavailable. Please contact the site administrator.');
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
@@ -25,6 +26,7 @@ export const loginWithGoogle = async () => {
 };
 
 export const logout = async () => {
+  if (!auth) return;
   try {
     await signOut(auth);
   } catch (error) {

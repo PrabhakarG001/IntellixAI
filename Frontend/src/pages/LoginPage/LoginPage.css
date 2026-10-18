@@ -200,6 +200,19 @@
   transform: scale(0.95);
 }
 
+.login-error {
+  color: #fda4af;
+  text-align: center;
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+}
+
+.login-google-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Google Icon */
 .login-google-icon {
   height: 20px;

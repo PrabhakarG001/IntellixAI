@@ -1,13 +1,14 @@
 import "./LoginPage.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginWithGoogle } from "../../services/firebase.js";
-import { Sparkles } from "lucide-react";
+import { loginWithGoogle, firebaseConfigurationError } from "../../services/firebase.js";
 import LightRays from "../../components/LightRays/LightRays.jsx";
 import DotField from "../../components/DotField/DotField.jsx";
 
 export default function LoginPage({ user, authLoading }) {
   const navigate = useNavigate();
+  const [loginError, setLoginError] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -16,10 +17,15 @@ export default function LoginPage({ user, authLoading }) {
   }, [user, authLoading, navigate]);
 
   const handleGoogleLogin = async () => {
+    if (signingIn || firebaseConfigurationError) return;
+    setSigningIn(true);
+    setLoginError("");
     try {
       await loginWithGoogle();
-    } catch (error) {
-      console.error("Login failed", error);
+    } catch {
+      setLoginError("Unable to sign in with Google. Please try again.");
+    } finally {
+      setSigningIn(false);
     }
   };
 
@@ -75,8 +81,19 @@ export default function LoginPage({ user, authLoading }) {
             </p>
           </div>
 
+          {(firebaseConfigurationError || loginError) && (
+            <p className="login-error" role="alert">
+              {firebaseConfigurationError
+                ? "Sign-in is unavailable because this site has not been configured. Please contact the site administrator."
+                : loginError}
+            </p>
+          )}
+          {firebaseConfigurationError && import.meta.env.DEV && (
+            <p className="login-error">{firebaseConfigurationError} See Frontend/.env.example, then restart Vite.</p>
+          )}
           <button
             onClick={handleGoogleLogin}
+            disabled={Boolean(firebaseConfigurationError) || signingIn}
             className="login-google-btn"
           >
             <svg className="login-google-icon" viewBox="0 0 24 24">
@@ -97,7 +114,7 @@ export default function LoginPage({ user, authLoading }) {
                 fill="#EA4335"
               />
             </svg>
-            Continue with Google
+            {signingIn ? "Signing in…" : "Continue with Google"}
           </button>
         </div>
       </div>

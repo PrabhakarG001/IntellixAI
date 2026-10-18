@@ -26,6 +26,10 @@ function App() {
   
   useEffect(() => {
     document.documentElement.classList.add("dark");
+    if (!auth) {
+      setAuthLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);

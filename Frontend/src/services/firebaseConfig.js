@@ -8,10 +8,10 @@ const fields = {
   measurementId: 'VITE_FIREBASE_MEASUREMENT_ID',
 };
 
-export function createFirebaseConfig(env) {
+export function createFirebaseConfig(env = {}) {
   const config = {};
   for (const [field, variable] of Object.entries(fields)) {
-    const value = env[variable]?.trim();
+    const value = typeof env[variable] === 'string' ? env[variable].trim() : '';
     if (value) config[field] = value;
   }
   const missing = ['apiKey', 'authDomain', 'projectId', 'appId'].filter(field =>
@@ -20,4 +20,19 @@ export function createFirebaseConfig(env) {
     throw new Error(`Configure ${missing.map(field => fields[field]).join(', ')} in the frontend environment before starting the app.`);
   }
   return config;
+}
+
+export function initializeFirebaseAuth(env, initializeApp, getAuth) {
+  let config;
+  try {
+    config = createFirebaseConfig(env);
+  } catch (error) {
+    return { app: null, auth: null, configurationError: error.message };
+  }
+  try {
+    const app = initializeApp(config);
+    return { app, auth: getAuth(app), configurationError: null };
+  } catch {
+    return { app: null, auth: null, configurationError: 'Firebase sign-in could not initialize. Verify the frontend Firebase configuration and rebuild the app.' };
+  }
 }
