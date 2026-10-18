@@ -5,9 +5,7 @@
     "install:all": "npm install && cd Frontend && npm install && cd ../backend && npm install",
     "dev:frontend": "cd Frontend && npm run dev",
     "start:backend": "cd backend && npm start",
-    "build": "cd Frontend && npm run build"
-  },
-  "devDependencies": {
-    "vite": "^7.2.7"
+    "build": "cd Frontend && npm run build",
+    "test": "cd backend && npm test && cd ../Frontend && npm test"
   }
 }

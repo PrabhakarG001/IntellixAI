@@ -18,14 +18,10 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState("talk");
-  const [selectedProvider, setSelectedProvider] = useState("openrouter");
-  const [selectedModel, setSelectedModel] = useState("openai/gpt-oss-120b");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSelectionChange = ({ mode, provider, model }) => {
+  const handleSelectionChange = ({ mode }) => {
     if (mode) setSelectedMode(mode);
-    if (provider) setSelectedProvider(provider);
-    if (model) setSelectedModel(model);
   };
   
   useEffect(() => {
@@ -51,7 +47,7 @@ function App() {
     sendMessage,
     startNewChat,
     stopGeneration,
-  } = useChat({ selectedModel, selectedProvider, selectedMode, user });
+  } = useChat({ selectedMode, user });
 
   const filteredChats = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -137,8 +133,6 @@ function App() {
                     onStopGeneration={stopGeneration}
                     onRegenerate={regenerateResponse}
                     selectedMode={selectedMode}
-                    selectedProvider={selectedProvider}
-                    selectedModel={selectedModel}
                     onSelectionChange={handleSelectionChange}
                   />
                 </div>

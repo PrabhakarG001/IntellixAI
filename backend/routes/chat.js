@@ -10,15 +10,17 @@ import {
   handleChatStream,
 } from "../controllers/chatController.js";
 
+export function createChatRouter(authenticate = verifyUser) {
 const router = express.Router();
 
-router.get("/chats", verifyUser, getChats);
-router.get("/chat/:id", verifyUser, getChatById);
-router.post("/new-chat", verifyUser, createNewChat);
-router.delete("/chat/:id", verifyUser, deleteChat);
-router.post("/chat/:id/clear", verifyUser, clearChat);
-router.post("/chat", verifyUser, handleChat);
-router.post("/chat/stream", verifyUser, handleChatStream);
-router.post("/stream", verifyUser, handleChatStream);
+router.get("/chats", authenticate, getChats);
+router.get("/chat/:id", authenticate, getChatById);
+router.post("/new-chat", authenticate, createNewChat);
+router.delete("/chat/:id", authenticate, deleteChat);
+router.post("/chat/:id/clear", authenticate, clearChat);
+router.post("/chat", authenticate, handleChat);
+router.post("/chat/stream", authenticate, handleChatStream);
+router.post("/stream", authenticate, handleChatStream);
 
-export default router;
+return router;
+}

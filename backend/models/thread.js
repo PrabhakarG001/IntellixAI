@@ -6,7 +6,8 @@ const MessageSchema = new mongoose.Schema({
   role: { type: String, enum: ["user", "assistant"], required: true },
   content: { type: String, required: true },
   thought: { type: String, default: "" },
-});
+  reasoning_details: { type: mongoose.Schema.Types.Mixed, default: undefined },
+}, { minimize: false });
 
 const ThreadSchema = new mongoose.Schema({
   id: { type: String, required: true, index: true },
@@ -14,6 +15,7 @@ const ThreadSchema = new mongoose.Schema({
   title: { type: String, default: "New chat" },
   messages: { type: [MessageSchema], default: [] },
 }, {
+  minimize: false,
   timestamps: true // adds createdAt and updatedAt
 });
 
@@ -43,7 +45,7 @@ export class Thread {
         const docs = await ThreadModel.find({ userId }).sort({ updatedAt: -1 }).lean();
         return docs.map(doc => new Thread(doc));
       } catch (err) {
-        console.warn("MongoDB find failed, falling back to memory store:", err.message);
+        console.warn("MongoDB find failed, falling back to memory store.");
       }
     }
     const results = [];
@@ -61,10 +63,10 @@ export class Thread {
         const doc = await ThreadModel.findOne({ id, userId }).lean();
         if (doc) return new Thread(doc);
       } catch (err) {
-        console.warn("MongoDB findById failed, falling back to memory store:", err.message);
+        console.warn("MongoDB findById failed, falling back to memory store.");
       }
     }
-    const memDoc = memoryStore.get(`${userId}:${id}`) || memoryStore.get(`guest-user:${id}`);
+    const memDoc = memoryStore.get(`${userId}:${id}`);
     return memDoc ? new Thread(memDoc) : null;
   }
 
@@ -98,7 +100,7 @@ export class Thread {
         ).lean();
         return new Thread(doc);
       } catch (err) {
-        console.warn("MongoDB upsert failed, using memory record:", err.message);
+        console.warn("MongoDB upsert failed, using memory record.");
       }
     }
     return new Thread(record);
@@ -110,12 +112,11 @@ export class Thread {
 
   static async delete(id, userId) {
     memoryStore.delete(`${userId}:${id}`);
-    memoryStore.delete(`guest-user:${id}`);
     if (isMongoConnected()) {
       try {
         await ThreadModel.deleteOne({ id, userId });
       } catch (err) {
-        console.warn("MongoDB delete failed:", err.message);
+        console.warn("MongoDB delete failed.");
       }
     }
   }
@@ -165,6 +166,9 @@ export function normalizeMessages(messages) {
       const thought = message.thought ?? message.reasoning;
       if (typeof thought === "string" && thought.trim()) {
         normalized.thought = thought;
+      }
+      if (message.role === 'assistant' && Array.isArray(message.reasoning_details)) {
+        normalized.reasoning_details = structuredClone(message.reasoning_details);
       }
 
       return normalized;

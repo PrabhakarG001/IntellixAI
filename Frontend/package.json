@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test"
   },
   "dependencies": {
     "firebase": "^12.15.0",
@@ -21,8 +22,8 @@
     "vite": "^7.2.7"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.1.1",
     "@tailwindcss/vite": "^4.1.18",
+    "@vitejs/plugin-react": "^5.1.1",
     "tailwindcss": "^4.1.18"
   }
 }

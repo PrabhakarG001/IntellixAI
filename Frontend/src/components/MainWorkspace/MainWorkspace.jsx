@@ -9,8 +9,6 @@ function MainWorkspace({
   onStopGeneration,
   onRegenerate,
   selectedMode,
-  selectedProvider,
-  selectedModel,
   onSelectionChange,
 }) {
   return (
@@ -24,8 +22,6 @@ function MainWorkspace({
         onRegenerate={onRegenerate}
         onOpenSidebar={onOpenSidebar}
         selectedMode={selectedMode}
-        selectedProvider={selectedProvider}
-        selectedModel={selectedModel}
         onSelectionChange={onSelectionChange}
       />
     </main>

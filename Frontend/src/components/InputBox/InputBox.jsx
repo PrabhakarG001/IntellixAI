@@ -9,10 +9,6 @@ function InputBox({
   disabled,
   isGenerating,
   onStop,
-  selectedMode,
-  selectedProvider,
-  selectedModel,
-  onSelectionChange,
 }) {
   const textareaRef = useRef(null);
 

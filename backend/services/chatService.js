@@ -1,109 +1,83 @@
-import { randomUUID } from "node:crypto";
-import { Thread, normalizeMessages, titleFromMessages } from "../models/thread.js";
-import {
-  classifyPayload,
-  createFallbackStream,
-  createStreamClassifier,
-  getOpenRouterModel,
-} from "../utils/openRouterClient.js";
-
-function normalizeThinkingMode(mode, legacyThinking) {
-  const value = String(mode || "").toLowerCase();
-  if (value === "deep") return "deep";
-  if (legacyThinking) return "deep";
-  return "quick";
-}
-
-function withThinkingModeInstruction(messages, thinkingMode) {
-  const instruction =
-    thinkingMode === "deep"
-      ? "Use advanced reasoning and careful analysis. Be clear, structured, and verify assumptions before answering."
-      : "Respond quickly and directly. Keep reasoning lightweight unless the user asks for depth.";
-
-  return [
-    {
-      role: "system",
-      content: instruction,
-    },
-    ...messages,
-  ];
-}
+import { randomUUID } from 'node:crypto';
+import { Thread, normalizeMessages, titleFromMessages } from '../models/thread.js';
+import { createMinimaxStream, MINIMAX_MODEL } from './minimaxService.js';
+import { AppError } from '../utils/errors.js';
 
 export async function buildChatRequest(body = {}, userId) {
-  const message = String(body.message || "").trim();
-  const mode = String(body.mode || body.selectedMode || "talk").toLowerCase();
-  const provider = String(body.provider || "openrouter").toLowerCase();
-  const model = String(body.model || getOpenRouterModel());
-  const thinkingMode = normalizeThinkingMode(body.thinkingMode, body.thinking);
-  const chatId = String(body.chatId || randomUUID());
+  const invalid = (message) => { throw new AppError(400, 'INVALID_REQUEST', message); };
+  if (!body || typeof body !== 'object' || Array.isArray(body)) invalid('A JSON object is required.');
+  if (typeof body.message !== 'string' || !body.message.trim()) invalid('A non-empty message is required.');
+  const message = body.message.trim();
+  if (message.length > 32_000) invalid('Message exceeds 32000 characters.');
+  const mode = body.mode || body.selectedMode || 'talk';
+  if (!['talk', 'coding', 'reasoning'].includes(mode)) invalid('Invalid chat mode.');
+  if (body.model !== undefined && body.model !== MINIMAX_MODEL) invalid('Only MiniMax-M3 is supported.');
+  if (body.provider !== undefined && body.provider !== 'minimax') invalid('Only MiniMax is supported.');
+  if (body.chatId !== undefined && (typeof body.chatId !== 'string' || !/^[\w-]{1,100}$/.test(body.chatId))) invalid('Invalid chat ID.');
+  if (body.regenerate !== undefined && typeof body.regenerate !== 'boolean') invalid('Invalid regenerate flag.');
+  if (body.thinkingMode !== undefined && !['quick', 'deep'].includes(body.thinkingMode)) invalid('Invalid thinking mode.');
+  if (body.messages !== undefined && (!Array.isArray(body.messages) || body.messages.length > 200 || body.messages.some(m =>
+    !m || !['user', 'assistant'].includes(m.role) || typeof m.content !== 'string' || !m.content.trim() || m.content.length > 64_000 ||
+    (m.id !== undefined && (typeof m.id !== 'string' || !m.id || m.id.length > 200))))) invalid('Invalid conversation history.');
+  const chatId = body.chatId || randomUUID();
   const existingChat = await Thread.findById(chatId, userId);
-  const previousMessages = existingChat?.messages || normalizeMessages(body.messages);
-
-  if (!message) {
-    throw new Error("message is required.");
+  let previous = existingChat?.messages || normalizeMessages(body.messages);
+  if (body.regenerate) {
+    const lastUser = previous.findLastIndex(m => m.role === 'user');
+    if (lastUser >= 0) {
+      if (previous[lastUser].content !== message) invalid('Regeneration must match the last user message.');
+      previous = previous.slice(0, lastUser);
+    }
   }
-
+  if (previous.length > 200 || previous.reduce((n, m) => n + m.content.length + (m.thought?.length || 0) + JSON.stringify(m.reasoning_details || []).length, 0) > 500_000) invalid('Conversation is too long. Start a new chat.');
   return {
-    chatId,
-    mode,
-    provider,
-    model,
-    selectedMode: mode,
-    message,
-    thinkingMode,
-    thinking: thinkingMode === "deep",
-    messages: [
-      ...previousMessages,
-      {
-        role: "user",
-        content: message,
-      },
-    ],
+    chatId, mode, model: MINIMAX_MODEL, message,
+    thinkingMode: body.thinkingMode || (mode === 'reasoning' || body.thinking === true ? 'deep' : 'quick'),
+    messages: [...previous, { role: 'user', content: message }],
   };
 }
 
-export async function createModelStream(request) {
-  return createFallbackStream({
-    messages: withThinkingModeInstruction(request.messages, request.thinkingMode),
-    selectedMode: request.mode || request.selectedMode || "talk",
-    requestedModel: request.model,
-    requestedProvider: request.provider,
+export function createModelStream(request, signal) {
+  const instructions = {
+    talk: 'Answer clearly and helpfully. For greetings, be warm and brief.',
+    coding: 'Help with programming. Explain relevant tradeoffs and provide correct, practical code.',
+    reasoning: 'Analyze carefully, verify assumptions, and explain the answer clearly.',
+  };
+  return createMinimaxStream({
+    messages: [{ role: 'system', content: `You are IntellixAI. ${instructions[request.mode]}` }, ...request.messages],
+    thinkingMode: request.thinkingMode, signal,
   });
 }
 
-export async function generateCompleteResponse(request) {
-  const stream = await createModelStream(request);
-  const classifier = createStreamClassifier();
-  let content = "";
-  let thought = "";
-
-  for await (const chunk of stream) {
-    for (const token of classifyPayload(chunk, classifier)) {
-      if (token.type === "thought") thought += token.content;
-      if (token.type === "content") content += token.content;
-    }
-  }
-
-  return {
-    content:
-      content.trim() ||
-      "I could not generate a visible response. Please retry in a moment.",
-    thought,
-  };
+export function classifyPayload(chunk) {
+  const delta = chunk.choices?.[0]?.delta || {};
+  const thought = delta.reasoning_content || '';
+  return [
+    ...(typeof thought === 'string' && thought ? [{ type: 'thought', content: thought }] : []),
+    ...(typeof delta.content === 'string' ? [{ type: 'content', content: delta.content }] : []),
+  ];
 }
 
-export async function saveConversation(request, assistant, userId) {
+export function requireVisibleContent(content) {
+  if (!content.trim()) throw new AppError(502, 'MINIMAX_EMPTY', 'MiniMax returned an empty answer. Please retry.');
+}
+
+export async function generateCompleteResponse(request, signal) {
+  const stream = await createModelStream(request, signal);
+  let content = '', thought = '';
+  for await (const chunk of stream) {
+    for (const token of classifyPayload(chunk)) {
+      if (token.type === 'thought') thought += token.content;
+      else content += token.content;
+    }
+  }
+  requireVisibleContent(content);
+  return { content, thought };
+}
+
+export function saveConversation(request, assistant, userId) {
   return Thread.upsert({
-    id: request.chatId,
-    userId,
-    title: titleFromMessages(request.messages),
-    messages: [
-      ...request.messages,
-      {
-        role: "assistant",
-        content: assistant.content,
-        thought: assistant.thought,
-      },
-    ],
+    id: request.chatId, userId, title: titleFromMessages(request.messages),
+    messages: [...request.messages, { role: 'assistant', content: assistant.content, thought: assistant.thought }],
   });
 }

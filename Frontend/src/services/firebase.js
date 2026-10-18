@@ -1,18 +1,13 @@
+import { createFirebaseConfig } from "./firebaseConfig.js";
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBb5Qm_KP2iuw5u1uqNjEr3z96cLpSSHzg",
-  authDomain: "intellixai-3aaaf.firebaseapp.com",
-  projectId: "intellixai-3aaaf",
-  storageBucket: "intellixai-3aaaf.firebasestorage.app",
-  messagingSenderId: "503527457818",
-  appId: "1:503527457818:web:ce56b47de63ee912707da3",
-  measurementId: "G-J6FK8P65G6"
-};
+const firebaseConfig = createFirebaseConfig(import.meta.env);
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+if (typeof window !== "undefined") {
+  isSupported().then(supported => { if (supported) getAnalytics(app); }).catch(() => {});
+}
 
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 

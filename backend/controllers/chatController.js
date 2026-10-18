@@ -4,8 +4,10 @@ import {
   createModelStream,
   generateCompleteResponse,
   saveConversation,
+  classifyPayload,
+  requireVisibleContent,
 } from "../services/chatService.js";
-import { classifyPayload, createStreamClassifier } from "../utils/openRouterClient.js";
+import { AppError, reportError } from "../utils/errors.js";
 
 export const getChats = async (req, res) => {
   try {
@@ -38,16 +40,21 @@ export const createNewChat = async (req, res) => {
 };
 
 export const deleteChat = async (req, res) => {
+  let unlock;
   try {
+    unlock = lockRequest(req);
     await Thread.delete(req.params.id, req.user.uid);
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete chat." });
-  }
+    const safe = reportError(error);
+    res.status(safe.status).json({ error: safe.message, code: safe.code });
+  } finally { unlock?.(); }
 };
 
 export const clearChat = async (req, res) => {
+  let unlock;
   try {
+    unlock = lockRequest(req);
     const chat = await Thread.upsert({
       id: req.params.id,
       userId: req.user.uid,
@@ -56,115 +63,91 @@ export const clearChat = async (req, res) => {
     });
     res.json({ chat: chat.toClient() });
   } catch (error) {
-    res.status(500).json({ error: "Failed to clear chat." });
-  }
+    const safe = reportError(error);
+    res.status(safe.status).json({ error: safe.message, code: safe.code });
+  } finally { unlock?.(); }
 };
 
-export const handleChat = async (req, res) => {
-  try {
-    const request = await buildChatRequest(req.body, req.user.uid);
-    const result = await generateCompleteResponse(request);
-    const chat = await saveConversation(request, result, req.user.uid);
+// Prevent simultaneous generations from overwriting a thread.
+const activeRequests = new Set();
+function lockRequest(req) {
+  const key = req.user.uid + ':' + (req.params.id || req.body?.chatId || 'new');
+  if (activeRequests.has(key)) throw new AppError(409, 'CHAT_BUSY', 'This chat is already generating a response.');
+  activeRequests.add(key);
+  return () => activeRequests.delete(key);
+}
 
-    res.json({
-      chat: chat.toClient(),
-      message: {
-        role: "assistant",
-        content: result.content,
-        thought: result.thought,
-      },
-    });
+export const handleChat = async (req, res) => {
+  const controller = new AbortController();
+  const onClose = () => { if (!res.writableEnded) controller.abort(); };
+  res.on('close', onClose);
+  let unlock;
+  try {
+    unlock = lockRequest(req);
+    const request = await buildChatRequest(req.body, req.user.uid);
+    const result = await generateCompleteResponse(request, controller.signal);
+    if (controller.signal.aborted) return;
+    const chat = await saveConversation(request, result, req.user.uid);
+    res.json({ chat: chat.toClient(), message: { role: 'assistant', content: result.content, thought: result.thought } });
   } catch (error) {
-    console.error("Chat request failed:", error?.message || error);
-    res.status(502).json({
-      error: "Unable to generate a response.",
-      details: error?.message || "Unknown backend error.",
-    });
+    const safe = reportError(error);
+    if (!res.destroyed) res.status(safe.status).json({ error: safe.message, code: safe.code });
+  } finally {
+    unlock?.();
+    controller.abort();
+    res.off('close', onClose);
   }
 };
 
 function sendSse(res, payload) {
-  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  if (!res.destroyed) res.write('data: ' + JSON.stringify(payload) + '\n\n');
 }
 
 export const handleChatStream = async (req, res) => {
+  const controller = new AbortController();
+  const onClose = () => { if (!res.writableEnded) controller.abort(); };
+  res.on('close', onClose);
+  let unlock;
+  let heartbeat;
   let stream;
-  let request;
-  const classifier = createStreamClassifier();
-  let assistantContent = "";
-
   try {
-    request = await buildChatRequest(req.body, req.user.uid);
+    unlock = lockRequest(req);
+    const request = await buildChatRequest(req.body, req.user.uid);
+    stream = await createModelStream(request, controller.signal);
     res.status(200);
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders?.();
-
-    req.on("close", () => {
-      // The openrouter SDK stream does not have a cancel method directly on the iterable.
-    });
-
-    sendSse(res, {
-      type: "meta",
-      chatId: request.chatId,
-      model: request.model,
-    });
-
-    if (request.thinking) {
-      sendSse(res, { type: "status", content: "Thinking..." });
-      sendSse(res, { type: "thought", content: "Analyzing prompt...\n" });
-      sendSse(res, { type: "thought", content: "Generating response...\n" });
-    }
-
-    stream = await createModelStream(request);
-
-    let assistantThought = "";
-
+    heartbeat = setInterval(() => { if (!res.destroyed) res.write(': keep-alive\n\n'); }, 15000);
+    sendSse(res, { type: 'meta', chatId: request.chatId, model: request.model });
+    let content = '', thought = '';
     for await (const chunk of stream) {
-      for (const token of classifyPayload(chunk, classifier)) {
-        if (token.type === "content") {
-          assistantContent += token.content;
-          sendSse(res, token);
-        } else if (token.type === "thought") {
-          assistantThought += token.content;
-          sendSse(res, token);
-        }
+      if (controller.signal.aborted) return;
+      for (const token of classifyPayload(chunk)) {
+        if (token.type === 'content') content += token.content;
+        else thought += token.content;
+        sendSse(res, token);
       }
-
-      if (chunk.usage?.completionTokensDetails?.reasoningTokens) {
-        console.log("\nReasoning tokens:", chunk.usage.completionTokensDetails.reasoningTokens);
-      }
+      if (chunk.usage) sendSse(res, { type: 'usage', usage: chunk.usage });
     }
-
-    if (!assistantContent.trim()) {
-      assistantContent =
-        "I could not generate a visible response. Please retry in a moment.";
-      sendSse(res, { type: "content", content: assistantContent });
-    }
-
-    const chat = await saveConversation(request, {
-      content: assistantContent,
-      thought: assistantThought,
-    }, req.user.uid);
-
-    sendSse(res, { type: "done", chat: chat.toClient() });
+    requireVisibleContent(content);
+    if (controller.signal.aborted) return;
+    const chat = await saveConversation(request, { content, thought }, req.user.uid);
+    sendSse(res, { type: 'done', chat: chat.toClient() });
     res.end();
   } catch (error) {
-    console.error("Chat stream failed:", error?.message || error);
-
-    if (!res.headersSent) {
-      return res.status(502).json({
-        error: "Unable to start streaming response.",
-        details: error?.message || "Unknown backend error.",
-      });
-    }
-
-    sendSse(res, {
-      type: "error",
-      content: "Streaming failed. Please check your model API key and try again.",
-    });
+    const safe = reportError(error);
+    if (res.destroyed) return;
+    if (!res.headersSent) return res.status(safe.status).json({ error: safe.message, code: safe.code });
+    sendSse(res, { type: 'error', content: safe.message, code: safe.code });
     res.end();
+  } finally {
+    clearInterval(heartbeat);
+    controller.abort();
+    await stream?.return?.();
+    unlock?.();
+    res.off('close', onClose);
   }
 };

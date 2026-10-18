@@ -1,5 +1,6 @@
 import { AlertCircle, RotateCcw, Menu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import AiModeSelector from "../InputBox/AiModeSelector.jsx";
 import InputBox from "../InputBox/InputBox.jsx";
 import MessageItem from "../MessageItem/MessageItem.jsx";
 import DecryptedText from "../DecryptedText/DecryptedText.jsx";
@@ -14,8 +15,6 @@ function ChatArea({
   onRegenerate,
   onOpenSidebar,
   selectedMode,
-  selectedProvider,
-  selectedModel,
   onSelectionChange,
 }) {
   const [draft, setDraft] = useState("");
@@ -31,7 +30,7 @@ function ChatArea({
 
   const send = (content = draft) => {
     const trimmed = content.trim();
-    if (!trimmed) return;
+    if (!trimmed || isGenerating) return;
 
     onSendMessage(trimmed);
     setDraft("");
@@ -63,6 +62,7 @@ function ChatArea({
           </h2>
 
           <div className="chat-input-wrapper-empty">
+            <div className="flex justify-end mb-2"><AiModeSelector selectedMode={selectedMode} onSelectionChange={onSelectionChange} /></div>
             <InputBox
               value={draft}
               onChange={setDraft}
@@ -70,10 +70,6 @@ function ChatArea({
               disabled={isGenerating}
               isGenerating={isGenerating}
               onStop={onStopGeneration}
-              selectedMode={selectedMode}
-              selectedProvider={selectedProvider}
-              selectedModel={selectedModel}
-              onSelectionChange={onSelectionChange}
             />
           </div>
         </div>
@@ -134,6 +130,7 @@ function ChatArea({
 
       <div className="chat-footer-section">
         <div className="chat-footer-wrapper">
+          <div className="flex justify-end mb-2"><AiModeSelector selectedMode={selectedMode} onSelectionChange={onSelectionChange} /></div>
           <InputBox
             value={draft}
             onChange={setDraft}
@@ -141,10 +138,6 @@ function ChatArea({
             disabled={isGenerating}
             isGenerating={isGenerating}
             onStop={onStopGeneration}
-            selectedMode={selectedMode}
-            selectedProvider={selectedProvider}
-            selectedModel={selectedModel}
-            onSelectionChange={onSelectionChange}
           />
           <p className="chat-disclaimer-text">
             IntellixAI can make mistakes. Check important info.

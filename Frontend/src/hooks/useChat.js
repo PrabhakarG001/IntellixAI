@@ -1,3 +1,4 @@
+import { historyBeforePrompt } from "../services/chatHistory.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   clearChatById,
@@ -19,12 +20,14 @@ const fallbackChats = [
   },
 ];
 
-export function useChat({ selectedModel, selectedProvider, user, selectedMode }) {
+export function useChat({ user, selectedMode }) {
   const [chats, setChats] = useState(fallbackChats);
   const [activeChatId, setActiveChatId] = useState(fallbackChats[0].id);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const abortRef = useRef(null);
+  const userRef = useRef(user?.uid);
+  userRef.current = user?.uid;
 
 
 
@@ -34,8 +37,10 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
   );
 
   const loadChats = useCallback(async () => {
+    const owner = userRef.current;
     try {
       const payload = await fetchChats();
+      if (owner !== userRef.current || abortRef.current) return;
       const loadedChats = payload.chats?.length
         ? normalizeChats(payload.chats)
         : fallbackChats;
@@ -47,11 +52,16 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
       );
       setError("");
     } catch (loadError) {
+      if (owner !== userRef.current) return;
       setError(loadError.message);
     }
   }, []);
 
   useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsGenerating(false);
+    setError("");
     if (user?.uid) {
       setChats(fallbackChats);
       setActiveChatId(fallbackChats[0].id);
@@ -60,17 +70,21 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
       setChats(fallbackChats);
       setActiveChatId(fallbackChats[0].id);
     }
+    return () => abortRef.current?.abort();
   }, [user?.uid, loadChats]);
 
   const startNewChat = useCallback(async () => {
+    const owner = userRef.current;
     try {
       const payload = await createChat();
+      if (owner !== userRef.current) return null;
       const chat = normalizeChat(payload.chat);
       setChats((current) => [chat, ...current]);
       setActiveChatId(chat.id);
       setError("");
       return chat;
     } catch (createError) {
+      if (owner !== userRef.current) return null;
       setError(createError.message);
       return null;
     }
@@ -78,26 +92,19 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
 
   const removeChat = useCallback(
     async (chatId) => {
-      let removedChat = null;
-      let nextActiveChatId = activeChatId;
-
-      setChats((current) => {
-        removedChat = current.find((chat) => chat.id === chatId) || null;
-        const nextChats = current.filter((chat) => chat.id !== chatId);
-        if (activeChatId === chatId) {
-          nextActiveChatId = nextChats[0]?.id ?? "";
-        }
-        return nextChats.length ? nextChats : fallbackChats;
-      });
-
-      if (activeChatId === chatId) {
-        setActiveChatId(nextActiveChatId || fallbackChats[0].id);
-      }
+      if (abortRef.current) return;
+      const owner = userRef.current;
+      const removedChat = chats.find(chat => chat.id === chatId) || null;
+      const nextChats = chats.filter(chat => chat.id !== chatId);
+      setChats(nextChats.length ? nextChats : fallbackChats);
+      if (activeChatId === chatId) setActiveChatId(nextChats[0]?.id || fallbackChats[0].id);
 
       try {
         await deleteChatById(chatId);
+        if (owner !== userRef.current) return;
         setError("");
       } catch (deleteError) {
+        if (owner !== userRef.current) return;
         if (removedChat) {
           setChats((current) => {
             const withoutFallback =
@@ -113,11 +120,11 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
         setError(deleteError.message);
       }
     },
-    [activeChatId],
+    [activeChatId, chats],
   );
 
   const clearChat = useCallback(async () => {
-    if (!activeChat) return;
+    if (!activeChat || abortRef.current) return;
 
     try {
       const payload = await clearChatById(activeChat.id);
@@ -130,8 +137,6 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
 
   const stopGeneration = useCallback(() => {
     abortRef.current?.abort();
-    abortRef.current = null;
-    setIsGenerating(false);
   }, []);
 
   const patchMessage = useCallback((chatId, messageId, updater) => {
@@ -171,19 +176,23 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
       if (!exists) {
         return [chat, ...current.filter(c => c.id !== fallbackChats[0].id)];
       }
-      return current.map((item) => (item.id === chat.id ? chat : item));
+      return current.map((item) => (item.id === chat.id ? { ...chat, isPinned: item.isPinned, title: item.title !== "New chat" ? item.title : chat.title } : item));
     });
   }, []);
 
   const selectChat = useCallback(
     async (chatId) => {
       setActiveChatId(chatId);
+      if (abortRef.current) return;
+      const owner = userRef.current;
 
       try {
         const payload = await fetchChatById(chatId);
+        if (owner !== userRef.current || abortRef.current) return;
         upsertChat(normalizeChat(payload.chat));
         setError("");
       } catch (selectError) {
+        if (owner !== userRef.current) return;
         setError(selectError.message);
       }
     },
@@ -193,9 +202,12 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
   const sendMessage = useCallback(
     async (content, { regenerate = false } = {}) => {
       const trimmed = content.trim();
-      if (!trimmed || isGenerating || !activeChat) return;
+      if (!trimmed || abortRef.current || !activeChat || !user?.uid) return;
 
+      const owner = user.uid;
       const controller = new AbortController();
+      const currentRequest = () => abortRef.current === controller && userRef.current === owner;
+      const timeoutId = setTimeout(() => controller.abort(new DOMException("The request timed out.", "TimeoutError")), 135000);
       const isFallback = activeChat.id === fallbackChats[0].id;
       const chatId = isFallback ? crypto.randomUUID() : activeChat.id;
       const userMessage = {
@@ -233,26 +245,28 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
           chatId,
           message: trimmed,
           mode: selectedMode,
-          provider: selectedProvider,
-          model: selectedModel,
-          selectedMode,
+          regenerate: regenerate && Boolean(activeChat.messages.at(-1)?.persisted),
+          messages: historyBeforePrompt(activeChat.messages, regenerate),
           signal: controller.signal,
         });
 
         await consumeSse(body, {
           onThought: (chunk) => {
+            if (!currentRequest() || controller.signal.aborted) return;
             patchMessage(chatId, assistantMessage.id, (message) => ({
               ...message,
               thought: `${message.thought || ""}${chunk}`,
             }));
           },
           onContent: (chunk) => {
+            if (!currentRequest() || controller.signal.aborted) return;
             patchMessage(chatId, assistantMessage.id, (message) => ({
               ...message,
               content: `${message.content || ""}${chunk}`,
             }));
           },
           onDone: (chat) => {
+            if (!currentRequest() || controller.signal.aborted) return;
             if (chat) {
               upsertChat(normalizeChat(chat));
             } else {
@@ -264,17 +278,16 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
           },
         });
       } catch (streamError) {
+        if (!currentRequest()) return;
         if (streamError.name === "AbortError") {
           patchMessage(chatId, assistantMessage.id, (message) => ({
             ...message,
             streaming: false,
+            stopped: true,
             content: message.content || "Generation stopped.",
           }));
         } else {
-          const rawMsg = streamError.message || "";
-          const friendlyMsg = rawMsg.toLowerCase().includes("user not found")
-            ? "OpenRouter / OpenAI API key error ('User not found'). Please check OPENROUTER_API_KEY in backend .env."
-            : rawMsg;
+          const friendlyMsg = streamError.message || "Unable to generate a response.";
           setError(friendlyMsg);
           patchMessage(chatId, assistantMessage.id, (prev) => ({
             ...prev,
@@ -286,15 +299,18 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
           }));
         }
       } finally {
-        abortRef.current = null;
-        setIsGenerating(false);
+        clearTimeout(timeoutId);
+        if (currentRequest()) {
+          abortRef.current = null;
+          setIsGenerating(false);
+        }
       }
     },
     [
       activeChat,
       isGenerating,
       patchMessage,
-      selectedModel,
+      user?.uid,
       selectedMode,
       upsertChat,
     ],
@@ -332,9 +348,7 @@ export function useChat({ selectedModel, selectedProvider, user, selectedMode })
 }
 
 function buildOptimisticChat({ chat, userMessage, assistantMessage, regenerate }) {
-  const baseMessages = regenerate
-    ? chat.messages.slice(0, Math.max(0, chat.messages.length - 1))
-    : chat.messages;
+  const baseMessages = historyBeforePrompt(chat.messages, regenerate);
   const nextMessages = [...baseMessages, userMessage, assistantMessage];
   const title =
     !chat.messages.length || chat.title === "New chat" || chat.title === "New conversation"
@@ -367,6 +381,7 @@ function normalizeChat(chat) {
       thought: message.thought || "",
       streaming: false,
       error: Boolean(message.error),
+      persisted: true,
     })),
   };
 }

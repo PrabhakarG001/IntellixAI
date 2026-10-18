@@ -12,7 +12,7 @@
   <p><a href="#engineering-highlights">Engineering</a> · <a href="#architecture">Architecture</a> · <a href="#quick-start">Quick start</a> · <a href="https://github.com/PrabhakarG001/IntellixAI">Repository</a></p>
 </div>
 
-> **Implementation status:** This README describes the MiniMax M3 migration in the local working tree. The application migration remains uncommitted and is excluded from this documentation-only update. A fresh checkout of `main` does not yet include that implementation or its new test commands. Live MiniMax access has not been verified.
+> **Verification status:** The frontend, backend, and automated integration tests are included here. Live MiniMax inference, a real Firebase login, and MongoDB persistence have not been verified against external accounts. Configure your own credentials before running the application.
 
 <!-- Add a genuine application screenshot or GIF here when one is available. -->
 
@@ -26,9 +26,9 @@ The engineering work spans the full request lifecycle: React state and cancellat
 
 | Area | Implementation |
 | --- | --- |
-| Streaming lifecycle | Shared SSE decoder handles fragmented UTF-8, CRLF boundaries, usage events, and completion detection. Client cancellation propagates to the provider. |
+| Streaming lifecycle | The shared SSE decoder handles upstream and frontend events, including fragmented UTF-8, CRLF boundaries, usage events, and completion detection. Client cancellation propagates to the provider. |
 | Authentication and isolation | Firebase ID-token verification protects chat routes; records are scoped to the signed-in user. |
-| Provider boundary | One backend service calls MiniMax M3. Credentials stay server-side; the server fixes the model and endpoint. |
+| Provider boundary | One backend service calls the official MiniMax M3 HTTP API directly. Credentials stay server-side; the server fixes the model and endpoint. |
 | Failure handling | Input limits, safe error categories, a two-minute provider timeout, and one retry for pre-stream transient failures. No provider fallback or fake answers. |
 | State consistency | A synchronous frontend submission guard and per-process backend locks prevent concurrent generation on the same thread. Regeneration replaces the last exchange. |
 | Testability | Node's test runner exercises service behavior, stream parsing, and real local HTTP integration with mocked provider responses. |
@@ -53,7 +53,7 @@ The engineering work spans the full request lifecycle: React state and cancellat
 | UI and rendering | Framer Motion, OGL, Lucide React, React Markdown, remark-gfm |
 | Backend | Node.js, Express 5, JavaScript ES modules, native `fetch` |
 | Authentication | Firebase Web SDK and Firebase Admin SDK |
-| AI integration | Official MiniMax HTTP API, fixed to `MiniMax-M3` |
+| AI integration | Official MiniMax HTTP API through native `fetch`, fixed to `MiniMax-M3` |
 | Database and storage | MongoDB through Mongoose 9; optional process-memory storage |
 | Development and hosting | npm, Node.js test runner; Vercel configuration for the frontend build only |
 
@@ -76,7 +76,7 @@ flowchart LR
     T <--> D[(MongoDB or temporary memory)]
 ```
 
-The browser never calls MiniMax directly. Express verifies the Firebase token, validates history, forwards provider events, and saves completed answers. Partial failures are reported explicitly. Reasoning events are separate from answer content; the UI does not currently display a separate reasoning panel.
+The browser never calls MiniMax directly. Express verifies the Firebase token, validates history, forwards provider events, and saves completed answers with their complete separated reasoning text for subsequent turns. Partial failures are reported explicitly. Reasoning events are separate from answer content; the UI does not currently display a separate reasoning panel.
 
 <details>
 <summary><strong>Project structure</strong></summary>
@@ -102,7 +102,7 @@ backend/
   test/                  Service and HTTP integration tests
   app.js                 Express application factory
   server.js              Environment, database connection, and startup
-shared/                  SSE decoder shared by frontend and backend
+shared/                  SSE decoder used by frontend and backend
 package.json             Root install, run, build, and test scripts
 vercel.json              Frontend build configuration
 ```
@@ -114,11 +114,11 @@ vercel.json              Frontend build configuration
 ### Prerequisites
 
 - Node.js **22.12 or newer**, npm, and Git. Vite 7 requires at least Node 22.12 on the 22.x line.
-- A MiniMax API key with M3 access and available account quota.
+- A direct MiniMax API key with MiniMax-M3 access and available quota.
 - A Firebase project with Google sign-in enabled and frontend domains authorized.
 - MongoDB only if persistent history is required.
 
-The Firebase project in `Frontend/src/services/firebase.js` must match the backend's `FIREBASE_PROJECT_ID`.
+The frontend Firebase project must match the backend's `FIREBASE_PROJECT_ID`.
 
 ### Clone and install
 
@@ -128,7 +128,21 @@ cd IntellixAI
 npm run install:all
 ```
 
-The migration-status note above applies to fresh clones. Installation reads the root, frontend, and backend package manifests.
+Installation reads the root, frontend, and backend package manifests.
+
+### Configure the frontend
+
+Create `Frontend/.env.local` only if it does not already exist, using `Frontend/.env.example` as a reference. Supply your Firebase project's public browser configuration:
+
+```dotenv
+VITE_API_BASE_URL=/api
+VITE_FIREBASE_API_KEY=your_firebase_web_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
+```
+
+These Firebase web settings are public browser configuration, not backend credentials. Never put `MINIMAX_API_KEY` in a frontend environment file. Enable Google sign-in and authorize the app's hostname in the matching Firebase project.
 
 ### Configure the backend
 
@@ -145,7 +159,7 @@ FIREBASE_PROJECT_ID=your_firebase_project_id
 
 | Variable | Purpose |
 | --- | --- |
-| `MINIMAX_API_KEY` | Backend-only credential required for AI requests. |
+| `MINIMAX_API_KEY` | Backend-only direct MiniMax credential; the only active AI credential. |
 | `PORT` | Backend port; defaults to `5000`. |
 | `CLIENT_ORIGIN` | Comma-separated frontend origin allowlist; defaults to the local origins above. |
 | `FIREBASE_PROJECT_ID` | Firebase project for token verification; omission uses the existing project default. |
@@ -166,7 +180,9 @@ Endpoint: POST https://api.minimax.io/v1/chat/completions
 Auth:     Authorization: Bearer <MINIMAX_API_KEY>
 ```
 
-See MiniMax's [invocation guide](https://platform.minimax.io/docs/guides/text-generation) and [Chat Completions reference](https://platform.minimax.io/docs/api-reference/text-openai-api). Talk and Coding disable thinking; Reasoning enables adaptive thinking. The service requests separate reasoning and usage, with an 8,192-token output limit including reasoning tokens.
+The model and endpoint are verified against MiniMax's [invocation guide](https://platform.minimax.io/docs/guides/text-generation) and [HTTP compatibility reference](https://platform.minimax.io/docs/api-reference/text-openai-api). Requests use bearer authentication, `stream_options.include_usage`, `reasoning_split: true`, and `max_completion_tokens: 8192`. Talk and Coding use `thinking.type: disabled`; Reasoning uses `adaptive`. Stored assistant reasoning is returned as `reasoning_content` in the next request. There are no gateway SDKs, alternate models, or provider fallbacks.
+
+Only `MINIMAX_API_KEY` is read for AI authentication. Existing local environment files are preserved; remove unused legacy entries when editing them locally.
 
 ### Start the application
 
@@ -203,6 +219,15 @@ npm run preview
 ```
 
 Preview does not use Vite's development API proxy. Set `VITE_API_BASE_URL` before building when previewing against a separate backend.
+
+Check configuration without a billable request, from the root:
+
+```sh
+cd backend
+npm run check:api
+```
+
+The result separates key presence from authentication and inference; the latter remain `not_checked` until a live request succeeds. Backend liveness is checked independently with `GET /`. No public endpoint exposes provider configuration or performs diagnostic inference.
 
 To check the real MiniMax account, run from the root:
 
@@ -244,11 +269,13 @@ Optional fields include `chatId`, `thinkingMode` (`quick` or `deep`), and `regen
 
 ## Deployment and current limits
 
-Deploy Express as a Node service with access to the root `shared/` directory. Configure persistent MongoDB storage and exact frontend origins for a hosted installation.
+Deploy Express as a Node service with the root `shared/` directory available. Include `shared/` when building the frontend as well. Configure persistent MongoDB storage and exact frontend origins for a hosted installation.
 
-The existing Vercel configuration builds the frontend only; it does not deploy Express or configure SPA history fallback. Configure the frontend host to serve `index.html` for application routes, and route `/api` to Express or set `VITE_API_BASE_URL` before building. Streaming requires proxy buffering to be disabled and request durations longer than the backend's two-minute timeout.
+The Vercel configuration installs the frontend's locked dependencies and builds the frontend only; it does not deploy Express or configure SPA history fallback. Configure the frontend host to serve `index.html` for application routes, and route `/api` to Express or set `VITE_API_BASE_URL` before building. Streaming requires proxy buffering to be disabled and request durations longer than the backend's two-minute timeout.
 
 Locks and memory storage are per process. Multiple backend instances need shared coordination and persistent storage. No working public deployment or application screenshot is included here.
+
+Dependency audit on October 18, 2026: the backend has no reported advisories; the frontend has five (four high findings in Firebase's unused Firestore/gRPC dependency chain and one low esbuild development-server finding). Firestore is not imported by this application. npm proposes a breaking Firebase downgrade for that chain; it has not been applied. These findings remain open.
 
 <details>
 <summary><strong>Troubleshooting</strong></summary>
@@ -256,9 +283,11 @@ Locks and memory storage are per process. Multiple backend instances need shared
 | Symptom | Check |
 | --- | --- |
 | `MINIMAX_NOT_CONFIGURED` / 503 | Set the backend key and restart Express. |
-| `MINIMAX_AUTH` / 502 | Verify the key and MiniMax account access. |
-| `MINIMAX_REQUEST` / 502 | Check M3 entitlement and input limits. |
-| `MINIMAX_QUOTA` / 503 | Check account balance and quota. |
+| `MINIMAX_AUTH` / 502 | Verify the direct MiniMax key and account access. |
+| `MINIMAX_MODEL` / 502 | Check account access to MiniMax-M3. |
+| `MINIMAX_ACCESS` / 502 | Check account permissions. |
+| `MINIMAX_REQUEST` / 502 | Check input and parameter limits. |
+| `MINIMAX_QUOTA` / 503 | Check MiniMax balance and quota. |
 | HTTP 429 | Wait for the provider rate limit to clear. |
 | HTTP 401 | Sign in again; verify both Firebase project configurations. |
 | CORS rejection / 403 | Match the frontend scheme, hostname, and port in `CLIENT_ORIGIN`. |
@@ -268,7 +297,7 @@ Locks and memory storage are per process. Multiple backend instances need shared
 | History disappears | Configure MongoDB; process-memory history resets on restart. |
 | MongoDB startup failure | Verify the URI, database availability, and network permissions. |
 
-Errors after streaming starts arrive as SSE `error` events. MiniMax's [error-code reference](https://platform.minimax.io/docs/api-reference/errorcode) covers provider-side diagnostics.
+Errors after streaming starts arrive as SSE `error` events. MiniMax's [error reference](https://platform.minimax.io/docs/api-reference/errorcode) covers provider-side diagnostics.
 
 </details>
 
@@ -283,7 +312,7 @@ Errors after streaming starts arrive as SSE `error` events. MiniMax's [error-cod
 
 These are future improvements, not shipped features:
 
-- Publish the application migration and verify MiniMax with a real account.
+- Verify MiniMax inference and a hosted installation with real account configuration.
 - Add genuine UI screenshots and a verified deployment link.
 - Persist pinned chats and custom titles through the backend.
 - Add signed-in browser tests, real database integration checks, and coordination across backend instances.

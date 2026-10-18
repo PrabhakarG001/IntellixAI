@@ -2,23 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { AI_MODES } from "../../config/aiConfig.js";
 
-/**
- * Gemini-style AI Mode & Provider/Model Selector component.
- */
+// Task modes share the same MiniMax-M3 model.
 function AiModeSelector({
   selectedMode = "talk",
-  selectedProvider = "openrouter",
-  selectedModel = "openai/gpt-oss-120b",
   onSelectionChange
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
   const currentModeObj = AI_MODES[selectedMode] || AI_MODES.talk;
-  const availableProviders = currentModeObj.providers || {};
-  const currentProviderObj = availableProviders[selectedProvider] || availableProviders[currentModeObj.defaultProvider] || Object.values(availableProviders)[0] || { name: "OpenRouter", models: [] };
-  const availableModels = currentProviderObj.models || [];
-
   // Close popover when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,27 +37,7 @@ function AiModeSelector({
     const targetMode = AI_MODES[modeKey];
     if (!targetMode) return;
 
-    const newProvider = targetMode.defaultProvider;
-    const providerObj = targetMode.providers[newProvider] || Object.values(targetMode.providers)[0];
-    const newModel = targetMode.defaultModel || (providerObj?.models[0]?.id);
-
-    if (onSelectionChange) {
-      onSelectionChange({
-        mode: modeKey,
-        provider: newProvider,
-        model: newModel
-      });
-    }
-  };
-
-  const handleModelSelect = (modelId) => {
-    if (onSelectionChange) {
-      onSelectionChange({
-        mode: selectedMode,
-        provider: selectedProvider,
-        model: modelId
-      });
-    }
+    onSelectionChange?.({ mode: modeKey });
     setIsOpen(false);
   };
 
@@ -134,31 +106,7 @@ function AiModeSelector({
             <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300/60 px-3 pt-1 pb-1">
               Model
             </div>
-            {availableModels.map((mObj) => {
-              const isSelected = selectedModel === mObj.id;
-              return (
-                <button
-                  key={mObj.id}
-                  type="button"
-                  onClick={() => handleModelSelect(mObj.id)}
-                  className={`w-full flex items-start gap-2 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
-                    isSelected
-                      ? "bg-purple-500/15 text-purple-200 font-medium"
-                      : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                  }`}
-                >
-                  <div className="w-4 pt-0.5 flex items-center justify-center">
-                    {isSelected && <Check size={14} className="text-purple-400 stroke-[2.5]" />}
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="font-medium text-slate-200 truncate">{mObj.name}</div>
-                    {mObj.description && (
-                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{mObj.description}</div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+            <div className="px-3 py-2 text-xs text-slate-300">MiniMax M3</div>
           </div>
         </div>
       )}
