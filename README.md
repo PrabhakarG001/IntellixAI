@@ -273,7 +273,9 @@ Optional fields include `chatId`, `thinkingMode` (`quick` or `deep`), and `regen
 
 Deploy Express as a Node service with the root `shared/` directory available. Include `shared/` when building the frontend as well. Configure persistent MongoDB storage and exact frontend origins for a hosted installation.
 
-The Vercel configuration installs the frontend's locked dependencies and builds the frontend only; it does not deploy Express or configure SPA history fallback. Configure the frontend host to serve `index.html` for application routes, and route `/api` to Express or set `VITE_API_BASE_URL` before building. Streaming requires proxy buffering to be disabled and request durations longer than the backend's two-minute timeout.
+The Vercel configuration installs the frontend's locked dependencies and builds the frontend only; it does not deploy Express. It rewrites `/login` to `index.html` so direct sign-in links and OAuth returns load the app. Configure equivalent history fallback on other frontend hosts, and route `/api` to Express or set `VITE_API_BASE_URL` before building. Streaming requires proxy buffering to be disabled and request durations longer than the backend's two-minute timeout.
+
+Signed-out visitors see a public welcome page at `/`; Google sign-in lives at `/login`. The Back button returns to the public home when there is no known in-app history. Chat remains protected. There are no password, password-reset, or separate registration forms: Google/Firebase manages the identity. Cancelling sign-in preserves the current session, including during account switching. API requests refresh a rejected Firebase token once; repeated HTTP 401 responses clear the local Firebase session. Logout clears the local Firebase session; it does not revoke previously issued ID tokens on other devices.
 
 Locks and memory storage are per process. Multiple backend instances need shared coordination and persistent storage. No working public deployment or application screenshot is included here.
 

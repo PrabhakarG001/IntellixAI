@@ -3,9 +3,12 @@ import { UserCircle2, LogOut, RefreshCcw, ChevronUp } from 'lucide-react';
 import { logout, loginWithGoogle } from '../../services/firebase.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import './SidebarProfile.css';
+import { authErrorMessage } from '../../services/authFlow.js';
 
 export default function SidebarProfile({ user, sidebarOpen }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [authError, setAuthError] = useState('');
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -26,21 +29,30 @@ export default function SidebarProfile({ user, sidebarOpen }) {
   }, [menuRef]);
 
   const handleSwitchAccount = async () => {
+    if (pending) return;
+    setPending(true);
+    setAuthError('');
     try {
-      await logout();
       await loginWithGoogle();
       setMenuOpen(false);
     } catch (error) {
-      console.error("Account switch failed", error);
+      setAuthError(authErrorMessage(error));
+    } finally {
+      setPending(false);
     }
   };
 
   const handleLogout = async () => {
+    if (pending) return;
+    setPending(true);
+    setAuthError('');
     try {
       await logout();
       setMenuOpen(false);
     } catch (error) {
-      console.error("Logout failed", error);
+      setAuthError('Unable to log out. Please try again.');
+    } finally {
+      setPending(false);
     }
   };
 
@@ -70,11 +82,12 @@ export default function SidebarProfile({ user, sidebarOpen }) {
               <div className="text-xs text-slate-400 truncate">{user.email}</div>
             </div>
             <div className="sidebar-profile-menu-actions">
-              <button className="sidebar-profile-menu-btn" onClick={handleSwitchAccount}>
+              {authError && <p role="alert" className="text-sm text-rose-300 px-3">{authError}</p>}
+              <button disabled={pending} className="sidebar-profile-menu-btn" onClick={handleSwitchAccount}>
                 <RefreshCcw size={14} />
                 <span>Switch Account</span>
               </button>
-              <button className="sidebar-profile-menu-btn" onClick={handleLogout}>
+              <button disabled={pending} className="sidebar-profile-menu-btn" onClick={handleLogout}>
                 <LogOut size={14} />
                 <span>Log Out</span>
               </button>

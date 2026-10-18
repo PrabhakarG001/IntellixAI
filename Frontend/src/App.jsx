@@ -5,16 +5,19 @@ import DotField from "./components/DotField/DotField.jsx";
 import MainWorkspace from "./components/MainWorkspace/MainWorkspace.jsx";
 import Sidebar from "./components/Sidebar/Sidebar.jsx";
 import LoginPage from "./pages/LoginPage/LoginPage.jsx";
+import WelcomePage from "./pages/LoginPage/WelcomePage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute.jsx";
 import CustomCursor from "./components/CustomCursor/CustomCursor.jsx";
 import { useChat } from "./hooks/useChat.js";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./services/firebase.js";
+import { auth, completeGoogleRedirect } from "./services/firebase.js";
+import { authErrorMessage } from './services/authFlow.js';
 import "./styles/global.css";
 
 function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState("talk");
@@ -30,11 +33,20 @@ function App() {
       setAuthLoading(false);
       return;
     }
+    let active = true;
+    completeGoogleRedirect().catch(error => {
+      if (active) setAuthError(authErrorMessage(error));
+    });
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser) setAuthError('');
       setAuthLoading(false);
+    }, error => {
+      setUser(null);
+      setAuthLoading(false);
+      setAuthError(authErrorMessage(error));
     });
-    return () => unsubscribe();
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   const {
@@ -75,7 +87,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage user={user} authLoading={authLoading} />} />
+        <Route path="/login" element={<LoginPage user={user} authLoading={authLoading} authError={authError} />} />
+        {!user && !authLoading && <Route path="/" element={<WelcomePage />} />}
         <Route
           path="*"
           element={

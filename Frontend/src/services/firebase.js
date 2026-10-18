@@ -1,8 +1,9 @@
 import { initializeFirebaseAuth } from "./firebaseConfig.js";
+import { createAuthActions } from "./authFlow.js";
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
 
 const state = initializeFirebaseAuth(import.meta.env, initializeApp, getAuth);
 export const auth = state.auth;
@@ -13,24 +14,9 @@ if (app && typeof window !== "undefined") {
 }
 
 const googleProvider = new GoogleAuthProvider();
-
-export const loginWithGoogle = async () => {
-  if (!auth) throw new Error('Sign-in is unavailable. Please contact the site administrator.');
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error("Google sign in popup error, falling back to redirect", error);
-    await signInWithRedirect(auth, googleProvider);
-  }
-};
-
-export const logout = async () => {
-  if (!auth) return;
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.error("Logout error", error);
-    throw error;
-  }
-};
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+const actions = createAuthActions({ auth, provider: googleProvider, popup: signInWithPopup,
+  redirect: signInWithRedirect, redirectResult: getRedirectResult, signOut });
+export const loginWithGoogle = actions.login;
+export const completeGoogleRedirect = actions.completeRedirect;
+export const logout = actions.logout;

@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { loginWithGoogle, firebaseConfigurationError } from "../../services/firebase.js";
 import LightRays from "../../components/LightRays/LightRays.jsx";
 import DotField from "../../components/DotField/DotField.jsx";
+import AuthBackButton from './AuthBackButton.jsx';
+import { authErrorMessage } from '../../services/authFlow.js';
 
-export default function LoginPage({ user, authLoading }) {
+export default function LoginPage({ user, authLoading, authError = '' }) {
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
@@ -22,8 +24,8 @@ export default function LoginPage({ user, authLoading }) {
     setLoginError("");
     try {
       await loginWithGoogle();
-    } catch {
-      setLoginError("Unable to sign in with Google. Please try again.");
+    } catch (error) {
+      setLoginError(authErrorMessage(error));
     } finally {
       setSigningIn(false);
     }
@@ -31,12 +33,16 @@ export default function LoginPage({ user, authLoading }) {
 
   if (authLoading || user) {
     return (
-      <div className="login-page-loader" />
+      <div className="login-page-loader">
+        <AuthBackButton />
+        <p role="status">Verifying session...</p>
+      </div>
     );
   }
 
   return (
     <div className="login-page-container">
+      <AuthBackButton />
       <div className="login-page-bg-layer">
         <LightRays
           raysOrigin="top-center"
@@ -81,11 +87,11 @@ export default function LoginPage({ user, authLoading }) {
             </p>
           </div>
 
-          {(firebaseConfigurationError || loginError) && (
+          {(firebaseConfigurationError || loginError || authError) && (
             <p className="login-error" role="alert">
               {firebaseConfigurationError
                 ? "Sign-in is unavailable because this site has not been configured. Please contact the site administrator."
-                : loginError}
+                : loginError || authError}
             </p>
           )}
           {firebaseConfigurationError && import.meta.env.DEV && (
