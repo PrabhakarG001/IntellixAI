@@ -31,3 +31,17 @@ Thumbs.db
 *.key
 *.cert
 coverage/
+.npm-cache/
+
+# Vite cache and editor temporary files
+.vite/
+*.tmp
+*.swp
+*~
+
+# Firebase Admin service-account exports and private key containers
+*firebase-adminsdk*.json
+service-account*.json
+serviceAccount*.json
+*.p12
+*.pfx

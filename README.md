@@ -1,18 +1,49 @@
-# IntellixAI
+<div align="center">
+  <img src="Frontend/public/logo.png" width="96" alt="IntellixAI logo" />
+  <h1>IntellixAI</h1>
+  <p><strong>Streaming AI chat, built end to end.</strong></p>
+  <p>A React workspace for conversation, coding help, and reasoning—backed by a JavaScript API for authentication, streaming, and conversation storage.</p>
 
-IntellixAI is a full-stack chat application with a React interface, Firebase sign-in, conversation management, and streaming AI responses. Its MiniMax integration uses a JavaScript Express backend to keep provider credentials on the server.
+  <img src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/Node.js-22.12%2B-43853D?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js 22.12 or newer" />
+  <img src="https://img.shields.io/badge/Express-5-333333?style=flat-square&amp;logo=express&amp;logoColor=white" alt="Express 5" />
+  <img src="https://img.shields.io/badge/AI-MiniMax_M3-7952B3?style=flat-square" alt="MiniMax M3 integration" />
 
-> **Migration status:** The MiniMax M3 implementation described below exists in the local working tree but is not included in this documentation-only commit. A fresh checkout of `main` will not support the MiniMax configuration or new test commands until the application migration is committed separately. The instructions below apply to the migrated application.
+  <p><a href="#engineering-highlights">Engineering</a> · <a href="#architecture">Architecture</a> · <a href="#quick-start">Quick start</a> · <a href="https://github.com/PrabhakarG001/IntellixAI">Repository</a></p>
+</div>
 
-## Features
+> **Implementation status:** This README describes the MiniMax M3 migration in the local working tree. The application migration remains uncommitted and is excluded from this documentation-only update. A fresh checkout of `main` does not yet include that implementation or its new test commands. Live MiniMax access has not been verified.
 
-- Stream responses over Server-Sent Events (SSE), stop generation, and regenerate the latest answer.
-- Choose Talk, Coding, or Reasoning; all three modes use MiniMax M3.
-- Sign in with Google through Firebase Authentication.
-- Create, search, clear, and delete conversations, with automatic titles. Pinning and renaming are local UI state and do not persist across reloads.
-- Render Markdown, code blocks, tables, and task lists, with response and code-copy controls.
-- Use the responsive dark interface with animated WebGL backgrounds.
-- Store conversations in MongoDB, or use temporary in-memory storage for development.
+<!-- Add a genuine application screenshot or GIF here when one is available. -->
+
+## Overview
+
+IntellixAI gives developers and curious learners one workspace for general questions, programming assistance, and reasoning tasks. It combines a conversational UI with server-managed context, streamed answers, and optional persistent history.
+
+The engineering work spans the full request lifecycle: React state and cancellation, authenticated Express routes, a centralized provider boundary, SSE decoding across network packets, and per-user storage. The project emphasizes practical integration and explicit failure handling; it does not claim production scale or benchmark results.
+
+## Engineering highlights
+
+| Area | Implementation |
+| --- | --- |
+| Streaming lifecycle | Shared SSE decoder handles fragmented UTF-8, CRLF boundaries, usage events, and completion detection. Client cancellation propagates to the provider. |
+| Authentication and isolation | Firebase ID-token verification protects chat routes; records are scoped to the signed-in user. |
+| Provider boundary | One backend service calls MiniMax M3. Credentials stay server-side; the server fixes the model and endpoint. |
+| Failure handling | Input limits, safe error categories, a two-minute provider timeout, and one retry for pre-stream transient failures. No provider fallback or fake answers. |
+| State consistency | A synchronous frontend submission guard and per-process backend locks prevent concurrent generation on the same thread. Regeneration replaces the last exchange. |
+| Testability | Node's test runner exercises service behavior, stream parsing, and real local HTTP integration with mocked provider responses. |
+
+## What you can do
+
+| Capability | What is implemented |
+| --- | --- |
+| Live conversations | Stream answers, stop generation, and regenerate the latest response. |
+| Task modes | Talk, Coding, and Reasoning share the same MiniMax M3 model. |
+| Personal history | Create, search, clear, and delete chats with automatic titles. Pinning and renaming are local UI state and reset on reload. |
+| Readable answers | Markdown, code blocks, tables, task lists, and response/code copying. |
+| Sign-in | Google login through Firebase Authentication. |
+| Storage | MongoDB persistence when configured; temporary process memory otherwise. |
+| Interface | Responsive dark layout, animated WebGL backgrounds, and loading states. |
 
 ## Technology stack
 
@@ -20,60 +51,88 @@ IntellixAI is a full-stack chat application with a React interface, Firebase sig
 | --- | --- |
 | Frontend | React 19, Vite 7, React Router 7, Tailwind CSS 4, custom CSS |
 | UI and rendering | Framer Motion, OGL, Lucide React, React Markdown, remark-gfm |
-| Backend | Node.js 22+, Express 5, JavaScript ES modules, native `fetch` |
+| Backend | Node.js, Express 5, JavaScript ES modules, native `fetch` |
 | Authentication | Firebase Web SDK and Firebase Admin SDK |
-| Storage | MongoDB through Mongoose 9; optional process-memory storage |
-| AI | Official MiniMax HTTP API, fixed to `MiniMax-M3` |
-| Tests | Node.js test runner, mocked provider responses, local HTTP integration tests |
+| AI integration | Official MiniMax HTTP API, fixed to `MiniMax-M3` |
+| Database and storage | MongoDB through Mongoose 9; optional process-memory storage |
+| Development and hosting | npm, Node.js test runner; Vercel configuration for the frontend build only |
 
 ## Architecture
+
+```mermaid
+flowchart LR
+    U[User] --> R[React chat workspace]
+    R <-->|Sign-in and ID token| F[Firebase Authentication]
+    subgraph B[Backend boundary: provider credential stays here]
+        E[Express API and token verification] --> S[MiniMax service]
+        K[MINIMAX_API_KEY in server environment] -.-> S
+        E <--> T[User-scoped thread storage]
+    end
+    R -->|Firebase token and chat data| E
+    S -->|HTTPS request| M[MiniMax M3]
+    M -->|Streamed response| S
+    S -->|Content, reasoning, usage| E
+    E -->|SSE events| R
+    T <--> D[(MongoDB or temporary memory)]
+```
+
+The browser never calls MiniMax directly. Express verifies the Firebase token, validates history, forwards provider events, and saves completed answers. Partial failures are reported explicitly. Reasoning events are separate from answer content; the UI does not currently display a separate reasoning panel.
+
+<details>
+<summary><strong>Project structure</strong></summary>
 
 ```text
 Frontend/
   src/
-    components/          Chat interface, sidebar, input, and visual effects
+    components/          Chat, sidebar, input, and visual effects
     config/              Task-mode definitions
     hooks/               Chat state and generation lifecycle
     pages/               Login page
     services/            Firebase, backend requests, SSE, and history helpers
     styles/              Global styling
   test/                  Transport and history tests
-  vite.config.js         React/Tailwind plugins and local API proxy
+  vite.config.js         Plugins and local API proxy
 backend/
   controllers/           Chat CRUD and response handlers
   models/                Conversation storage
   routes/                Authenticated API routes
-  services/              Request validation and centralized MiniMax integration
+  services/              Request validation and MiniMax integration
   utils/                 Authentication and safe errors
   scripts/               Live MiniMax smoke check
   test/                  Service and HTTP integration tests
   app.js                 Express application factory
-  server.js              Environment loading, database connection, and startup
-shared/                  SSE decoding shared by frontend and backend
+  server.js              Environment, database connection, and startup
+shared/                  SSE decoder shared by frontend and backend
 package.json             Root install, run, build, and test scripts
 vercel.json              Frontend build configuration
 ```
 
-The browser sends a Firebase ID token and chat data to Express. The backend verifies the token, validates the conversation, calls MiniMax, forwards streamed events, and saves a completed answer. The MiniMax key never reaches the browser. Failed or interrupted generations are not saved as successful answers.
+</details>
 
-## Prerequisites
+## Quick start
 
-- Node.js **22.12 or newer**, npm, and Git (Vite 7 requires at least Node 22.12 on the 22.x line).
-- A MiniMax API key with access to `MiniMax-M3` and available account quota.
-- A Firebase project with Google sign-in enabled and your frontend domains authorized.
-- MongoDB only if persistent conversation storage is required.
+### Prerequisites
 
-The frontend currently contains Firebase project configuration in `Frontend/src/services/firebase.js`. Ensure that it matches the project used by the backend's `FIREBASE_PROJECT_ID`.
+- Node.js **22.12 or newer**, npm, and Git. Vite 7 requires at least Node 22.12 on the 22.x line.
+- A MiniMax API key with M3 access and available account quota.
+- A Firebase project with Google sign-in enabled and frontend domains authorized.
+- MongoDB only if persistent history is required.
 
-## Installation and environment
+The Firebase project in `Frontend/src/services/firebase.js` must match the backend's `FIREBASE_PROJECT_ID`.
 
-From the repository root, install all three package manifests:
+### Clone and install
 
 ```sh
+git clone https://github.com/PrabhakarG001/IntellixAI.git
+cd IntellixAI
 npm run install:all
 ```
 
-Create `backend/.env` if it does not already exist. Use the following placeholders and edit the file locally; preserve any existing environment file.
+The migration-status note above applies to fresh clones. Installation reads the root, frontend, and backend package manifests.
+
+### Configure the backend
+
+Create `backend/.env` if it does not exist, then edit it locally. Preserve existing environment files.
 
 ```dotenv
 MINIMAX_API_KEY=your_minimax_api_key_here
@@ -84,24 +143,22 @@ FIREBASE_PROJECT_ID=your_firebase_project_id
 # MONGODB_URI=mongodb://127.0.0.1:27017/intellixai
 ```
 
-| Variable | Location | Purpose |
-| --- | --- | --- |
-| `MINIMAX_API_KEY` | Backend | Required for AI requests; the only AI-provider credential. |
-| `PORT` | Backend | Server port; defaults to `5000`. |
-| `CLIENT_ORIGIN` | Backend | Comma-separated allowed frontend origins. Defaults to the two local origins above. |
-| `FIREBASE_PROJECT_ID` | Backend | Firebase project for ID-token verification. If omitted, the code uses its existing project default. |
-| `MONGODB_URI` | Backend | Optional MongoDB connection URI. Without it, chats reset when the process restarts. |
-| `VITE_API_BASE_URL` | Frontend | Optional public backend URL, including `/api`; defaults to `/api`. |
+| Variable | Purpose |
+| --- | --- |
+| `MINIMAX_API_KEY` | Backend-only credential required for AI requests. |
+| `PORT` | Backend port; defaults to `5000`. |
+| `CLIENT_ORIGIN` | Comma-separated frontend origin allowlist; defaults to the local origins above. |
+| `FIREBASE_PROJECT_ID` | Firebase project for token verification; omission uses the existing project default. |
+| `MONGODB_URI` | Optional database URI. Without it, chats reset on server restart. |
+| `VITE_API_BASE_URL` | Optional **public frontend** setting; defaults to `/api`. Set before building. |
 
-For a separately hosted backend, set `Frontend/.env.local` before building:
+For a separately hosted backend, put its public URL in `Frontend/.env.local`:
 
 ```dotenv
 VITE_API_BASE_URL=https://your-backend.example/api
 ```
 
-### MiniMax model configuration
-
-The service fixes these values in `backend/services/minimaxService.js`; no model or endpoint environment variable is needed:
+The backend fixes the model and endpoint in `backend/services/minimaxService.js`; no model environment variable is needed:
 
 ```text
 Model:    MiniMax-M3
@@ -109,44 +166,70 @@ Endpoint: POST https://api.minimax.io/v1/chat/completions
 Auth:     Authorization: Bearer <MINIMAX_API_KEY>
 ```
 
-This contract is documented in MiniMax's [model invocation guide](https://platform.minimax.io/docs/guides/text-generation) and [Chat Completions reference](https://platform.minimax.io/docs/api-reference/text-openai-api). Talk and Coding disable thinking; Reasoning enables adaptive thinking. The backend requests separated reasoning, streamed usage, and an output limit of 8,192 tokens, including reasoning tokens. It makes at most one retry for pre-stream transient network/server failures and never falls back to another provider.
+See MiniMax's [invocation guide](https://platform.minimax.io/docs/guides/text-generation) and [Chat Completions reference](https://platform.minimax.io/docs/api-reference/text-openai-api). Talk and Coding disable thinking; Reasoning enables adaptive thinking. The service requests separate reasoning and usage, with an 8,192-token output limit including reasoning tokens.
 
-## Run locally
+### Start the application
 
-Start the backend from the repository root:
+Run each command from the repository root in a separate terminal:
 
 ```sh
+# Terminal 1
 npm run start:backend
 ```
 
-In a second terminal, also from the root:
-
 ```sh
+# Terminal 2
 npm run dev:frontend
 ```
 
-Open `http://localhost:5173` and sign in. Vite proxies `/api` to `http://localhost:5000`. If you change the backend port, update that proxy or set `VITE_API_BASE_URL` accordingly. If Vite selects a different frontend port, include its actual origin in `CLIENT_ORIGIN`.
+Open `http://localhost:5173` and sign in. Vite proxies `/api` to `http://localhost:5000`. If either port changes, update the proxy/backend URL and the allowed frontend origin. When `MONGODB_URI` is set, startup waits for MongoDB and exits if the connection fails; otherwise, it warns that storage is temporary.
 
-The backend waits for MongoDB when `MONGODB_URI` is set and exits if the connection fails. Without it, startup warns that storage is temporary.
+## Validation
 
-## API endpoints
+From the repository root:
+
+```sh
+npm test
+npm run build
+```
+
+Tests cover validation, failure classification, bounded retries, HTTP integration, regeneration, cancellation, concurrency, and fragmented streams. Provider responses and authentication are injected in integration tests; they do not verify real Firebase sign-in, MongoDB persistence, or MiniMax billing/access. No coverage percentage, lint script, or TypeScript check is claimed.
+
+The build writes `Frontend/dist`. To preview it:
+
+```sh
+cd Frontend
+npm run preview
+```
+
+Preview does not use Vite's development API proxy. Set `VITE_API_BASE_URL` before building when previewing against a separate backend.
+
+To check the real MiniMax account, run from the root:
+
+```sh
+cd backend
+npm run test:live
+```
+
+The live check sends a small, potentially billable request when a key exists. Missing credentials return `MINIMAX_NOT_CONFIGURED`. Mocked tests are not proof of live model access.
+
+<details>
+<summary><strong>API reference</strong></summary>
 
 All `/api` routes require `Authorization: Bearer <FIREBASE_ID_TOKEN>`. This is a Firebase session token, not the MiniMax key.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/` | Backend health response |
-| `GET` | `/api/chats` | List the signed-in user's conversations |
+| `GET` | `/` | Public backend health response |
+| `GET` | `/api/chats` | List the user's conversations |
 | `GET` | `/api/chat/:id` | Retrieve a conversation |
-| `POST` | `/api/new-chat` | Create an empty conversation |
+| `POST` | `/api/new-chat` | Create a conversation |
 | `DELETE` | `/api/chat/:id` | Delete a conversation |
 | `POST` | `/api/chat/:id/clear` | Clear a conversation |
-| `POST` | `/api/chat` | Generate and return a complete JSON response |
-| `POST` | `/api/chat/stream` | Generate an SSE response |
+| `POST` | `/api/chat` | Return a complete JSON answer |
+| `POST` | `/api/chat/stream` | Stream an SSE answer |
 
-`/api/stream` aliases the streaming route. The router also mounts under `/api/intellix` with the same relative paths.
-
-Example chat request body:
+`/api/stream` aliases the streaming route. The router also mounts at `/api/intellix` with the same relative paths.
 
 ```json
 {
@@ -155,71 +238,58 @@ Example chat request body:
 }
 ```
 
-Optional fields include `chatId`, `thinkingMode` (`quick` or `deep`), and `regenerate`. SSE events include `meta`, `content`, `thought`, `usage`, `done`, and `error`. The UI renders the answer content; receiving reasoning events does not imply a separate reasoning panel is displayed.
+Optional fields include `chatId`, `thinkingMode` (`quick` or `deep`), and `regenerate`. Stream events include `meta`, `content`, `thought`, `usage`, `done`, and `error`.
 
-## Build and tests
+</details>
 
-Run from the repository root:
+## Deployment and current limits
 
-```sh
-npm test
-npm run build
-```
+Deploy Express as a Node service with access to the root `shared/` directory. Configure persistent MongoDB storage and exact frontend origins for a hosted installation.
 
-Tests cover backend validation and failure handling, local frontend-to-backend HTTP integration with mocked MiniMax responses, regeneration, cancellation, concurrency, and fragmented streams. They do not require a provider key or verify a live MiniMax account, real Firebase login, or MongoDB persistence. No lint or TypeScript check script is configured.
+The existing Vercel configuration builds the frontend only; it does not deploy Express or configure SPA history fallback. Configure the frontend host to serve `index.html` for application routes, and route `/api` to Express or set `VITE_API_BASE_URL` before building. Streaming requires proxy buffering to be disabled and request durations longer than the backend's two-minute timeout.
 
-The production frontend is written to `Frontend/dist`. To preview it:
+Locks and memory storage are per process. Multiple backend instances need shared coordination and persistent storage. No working public deployment or application screenshot is included here.
 
-```sh
-cd Frontend
-npm run preview
-```
-
-Preview does not use the development server's API proxy. Set `VITE_API_BASE_URL` before building when previewing against a separately running backend.
-
-To check the actual MiniMax account, run from the root:
-
-```sh
-cd backend
-npm run test:live
-```
-
-This sends a small, potentially billable request when a key is configured. A missing key returns `MINIMAX_NOT_CONFIGURED`. Successful mocked tests are not evidence of live model access or available billing quota.
-
-## Deployment
-
-Deploy Express as a Node service and include the root `shared/` directory alongside `backend/`. Configure backend environment variables, persistent MongoDB storage, and the exact frontend origin allowlist.
-
-The existing `vercel.json` builds only the frontend; it does not deploy Express or configure SPA history fallback. Configure the frontend host to serve `index.html` for application routes. Route `/api` to Express or set the public `VITE_API_BASE_URL` before building. Allow SSE without proxy buffering and request durations longer than the backend's two-minute timeout.
-
-Generation locking and development memory storage are per process. Multiple backend instances require shared coordination and persistent storage.
-
-## Troubleshooting
+<details>
+<summary><strong>Troubleshooting</strong></summary>
 
 | Symptom | Check |
 | --- | --- |
-| `MINIMAX_NOT_CONFIGURED` / HTTP 503 | Set a real backend `MINIMAX_API_KEY` and restart Express. |
-| `MINIMAX_AUTH` / HTTP 502 | Check the backend key and account access; do not put the key in frontend configuration. |
-| `MINIMAX_REQUEST` / HTTP 502 | Confirm M3 entitlement, supported input, and conversation limits. |
-| `MINIMAX_QUOTA` / HTTP 503 | Check MiniMax balance, plan, and quota. |
+| `MINIMAX_NOT_CONFIGURED` / 503 | Set the backend key and restart Express. |
+| `MINIMAX_AUTH` / 502 | Verify the key and MiniMax account access. |
+| `MINIMAX_REQUEST` / 502 | Check M3 entitlement and input limits. |
+| `MINIMAX_QUOTA` / 503 | Check account balance and quota. |
 | HTTP 429 | Wait for the provider rate limit to clear. |
-| HTTP 401 | Sign in again and confirm both Firebase configurations use the same project. |
-| CORS rejection / HTTP 403 | Match the frontend scheme, hostname, and port in `CLIENT_ORIGIN`. |
-| HTTP 409 | Wait for or stop the generation already running in this conversation. |
-| Network failure, invalid stream, or HTML response | Check the backend URL, `/api` routing, and running server. A frontend-only host cannot serve Express routes. |
-| Timeout or interrupted answer | Check connectivity and proxy streaming/time limits; retry or shorten the request. |
-| Chats disappear after restart | Configure `MONGODB_URI` for persistent storage. |
-| MongoDB startup failure | Check the URI, database availability, credentials, and network permissions. |
+| HTTP 401 | Sign in again; verify both Firebase project configurations. |
+| CORS rejection / 403 | Match the frontend scheme, hostname, and port in `CLIENT_ORIGIN`. |
+| HTTP 409 | Wait for or stop the active generation in this thread. |
+| Invalid stream, HTML, or network failure | Check backend availability and `/api` routing. A frontend-only host cannot serve Express. |
+| Interrupted answer or timeout | Check connectivity and proxy streaming limits; retry or shorten the prompt. |
+| History disappears | Configure MongoDB; process-memory history resets on restart. |
+| MongoDB startup failure | Verify the URI, database availability, and network permissions. |
 
-See MiniMax's [error-code reference](https://platform.minimax.io/docs/api-reference/errorcode) for account-side diagnostics. Errors after streaming starts arrive as SSE `error` events; the HTTP response has already started.
+Errors after streaming starts arrive as SSE `error` events. MiniMax's [error-code reference](https://platform.minimax.io/docs/api-reference/errorcode) covers provider-side diagnostics.
 
-## Security and contributions
+</details>
 
-- Keep `MINIMAX_API_KEY`, database credentials, and other secrets exclusively in backend environment configuration. Never use `VITE_MINIMAX_API_KEY` or `NEXT_PUBLIC_MINIMAX_API_KEY`.
-- Vite variables are public build-time configuration. Use them only for values safe to expose, such as the backend URL.
-- Environment files are ignored by Git; example files must contain placeholders only. Review diffs for secrets before committing.
-- Preserve Firebase authentication and per-user conversation isolation when contributing. Run the applicable tests and production build before submitting changes.
+## Security
 
-## License
+- Keep provider keys and database credentials on the backend. Never use `VITE_MINIMAX_API_KEY` or `NEXT_PUBLIC_MINIMAX_API_KEY`.
+- Vite environment variables are public build-time configuration. Use them only for values safe to expose.
+- `.gitignore` excludes local environment files, dependencies, build outputs, caches, and private credential exports while allowing `.env.example` files. Review staged files before committing.
+- Previously committed credentials must be revoked and rotated. Ignore rules protect future commits; they do not remove secrets from Git history.
 
-`backend/package.json` declares ISC. No standalone repository-wide `LICENSE` file is included.
+## Next steps
+
+These are future improvements, not shipped features:
+
+- Publish the application migration and verify MiniMax with a real account.
+- Add genuine UI screenshots and a verified deployment link.
+- Persist pinned chats and custom titles through the backend.
+- Add signed-in browser tests, real database integration checks, and coordination across backend instances.
+
+## Explore and contribute
+
+Browse the [source repository](https://github.com/PrabhakarG001/IntellixAI), report reproducible problems in [Issues](https://github.com/PrabhakarG001/IntellixAI/issues), or propose a focused change through [Pull requests](https://github.com/PrabhakarG001/IntellixAI/pulls). Keep secrets out of commits and run the applicable tests and production build before submitting changes.
+
+**License:** `backend/package.json` declares ISC. No standalone repository-wide `LICENSE` file is included.
