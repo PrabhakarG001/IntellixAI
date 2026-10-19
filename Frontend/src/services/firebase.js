@@ -1,5 +1,5 @@
 import { initializeFirebaseAuth } from "./firebaseConfig.js";
-import { createAuthActions } from "./authFlow.js";
+import { createGoogleLogin } from "./googleLogin.js";
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -15,8 +15,8 @@ if (app && typeof window !== "undefined") {
 
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
-const actions = createAuthActions({ auth, provider: googleProvider, popup: signInWithPopup,
+const actions = createGoogleLogin({ auth, provider: googleProvider, popup: signInWithPopup,
   redirect: signInWithRedirect, redirectResult: getRedirectResult, signOut });
 export const loginWithGoogle = actions.login;
 export const completeGoogleRedirect = actions.completeRedirect;
-export const logout = actions.logout;
+export const logout = () => auth ? signOut(auth) : Promise.resolve();

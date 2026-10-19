@@ -11,7 +11,7 @@ import CustomCursor from "./components/CustomCursor/CustomCursor.jsx";
 import { useChat } from "./hooks/useChat.js";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, completeGoogleRedirect } from "./services/firebase.js";
-import { authErrorMessage } from './services/authFlow.js';
+import { loginErrorMessage } from './services/googleLogin.js';
 import "./styles/global.css";
 
 function App() {
@@ -35,7 +35,7 @@ function App() {
     }
     let active = true;
     completeGoogleRedirect().catch(error => {
-      if (active) setAuthError(authErrorMessage(error));
+      if (active) setAuthError(loginErrorMessage(error));
     });
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -44,7 +44,7 @@ function App() {
     }, error => {
       setUser(null);
       setAuthLoading(false);
-      setAuthError(authErrorMessage(error));
+      setAuthError(loginErrorMessage(error));
     });
     return () => { active = false; unsubscribe(); };
   }, []);

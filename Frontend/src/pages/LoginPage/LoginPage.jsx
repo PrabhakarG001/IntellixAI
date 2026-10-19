@@ -1,13 +1,13 @@
 import "./LoginPage.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { loginWithGoogle, firebaseConfigurationError } from "../../services/firebase.js";
 import LightRays from "../../components/LightRays/LightRays.jsx";
 import DotField from "../../components/DotField/DotField.jsx";
-import { ArrowLeft } from "lucide-react";
-import { authErrorMessage } from '../../services/authFlow.js';
+import { loginErrorMessage } from "../../services/googleLogin.js";
 
-export default function LoginPage({ user, authLoading, authError = '' }) {
+export default function LoginPage({ user, authLoading, authError = "" }) {
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
@@ -39,7 +39,7 @@ export default function LoginPage({ user, authLoading, authError = '' }) {
     try {
       await loginWithGoogle();
     } catch (error) {
-      setLoginError(authErrorMessage(error));
+      setLoginError(loginErrorMessage(error));
     } finally {
       setSigningIn(false);
     }
@@ -49,6 +49,7 @@ export default function LoginPage({ user, authLoading, authError = '' }) {
     return (
       <div className="login-page-loader">
         {backArrow}
+        <span role="status">Verifying session...</span>
       </div>
     );
   }
@@ -56,7 +57,7 @@ export default function LoginPage({ user, authLoading, authError = '' }) {
   return (
     <div className="login-page-container">
       {backArrow}
-      <div className="login-page-bg-layer">
+      <div className="login-page-bg-layer" aria-hidden="true">
         <LightRays
           raysOrigin="top-center"
           raysColor="#A855F7"
@@ -70,7 +71,7 @@ export default function LoginPage({ user, authLoading, authError = '' }) {
         />
       </div>
 
-      <div className="login-page-bg-layer">
+      <div className="login-page-bg-layer" aria-hidden="true">
         <DotField
           dotRadius={1.5}
           dotSpacing={14}
@@ -111,6 +112,8 @@ export default function LoginPage({ user, authLoading, authError = '' }) {
             <p className="login-error">{firebaseConfigurationError} See Frontend/.env.example, then restart Vite.</p>
           )}
           <button
+            type="button"
+            aria-busy={signingIn}
             onClick={handleGoogleLogin}
             disabled={Boolean(firebaseConfigurationError) || signingIn}
             className="login-google-btn"
