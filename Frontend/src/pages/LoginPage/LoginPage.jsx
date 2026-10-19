@@ -1,6 +1,6 @@
 import "./LoginPage.css";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { loginWithGoogle, firebaseConfigurationError } from "../../services/firebase.js";
 import LightRays from "../../components/LightRays/LightRays.jsx";
@@ -9,6 +9,7 @@ import { loginErrorMessage } from "../../services/googleLogin.js";
 
 export default function LoginPage({ user, authLoading, authError = "" }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loginError, setLoginError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
@@ -18,7 +19,9 @@ export default function LoginPage({ user, authLoading, authError = "" }) {
       className="login-back-arrow"
       aria-label="Back"
       onClick={() => {
-        if (window.history.state?.idx > 0) navigate(-1);
+        // Only return through history when the public home explicitly sent us here.
+        // Protected routes redirect back to login and would otherwise create a loop.
+        if (location.state?.backTo === "/" && window.history.state?.idx > 0) navigate(-1);
         else navigate("/", { replace: true });
       }}
     >
