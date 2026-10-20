@@ -9,8 +9,12 @@ const env = {
   VITE_FIREBASE_APP_ID: 'test-app-id',
 };
 
-test('an unconfigured production build fails with hosting setup instructions', () => {
-  assert.throws(() => validateFirebaseBuildConfig({ command: 'build', env: {} }), error =>
+test('a production build without overrides uses the verified public project defaults', () => {
+  assert.doesNotThrow(() => validateFirebaseBuildConfig({ command: 'build', env: {} }));
+});
+
+test('a partially configured production build fails with hosting setup instructions', () => {
+  assert.throws(() => validateFirebaseBuildConfig({ command: 'build', env: { VITE_FIREBASE_API_KEY: '' } }), error =>
     ['VITE_FIREBASE_API_KEY', 'VITE_FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_PROJECT_ID',
       'VITE_FIREBASE_APP_ID', 'Vercel', 'redeploy'].every(value => error.message.includes(value)));
 });

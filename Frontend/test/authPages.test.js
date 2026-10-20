@@ -29,11 +29,18 @@ test('login and session-loading screens render an accessible non-submit back arr
   }
 });
 
-test('direct login without configuration renders useful error and disables Google login', () => {
+test('direct login without environment overrides enables Google login using the public default', () => {
   const html = render(LoginPage, { user: null, authLoading: false });
+  assert.doesNotMatch(html, /Sign-in is unavailable/);
+  assert.doesNotMatch(html, /disabled="" class="login-google-btn"/);
+  assert.match(html, /Continue with Google/);
+});
+
+test('provider errors remain visible without disabling retries', () => {
+  const html = render(LoginPage, { user: null, authLoading: false, authError: 'Google sign-in is not enabled.' });
   assert.match(html, /role="alert"/);
-  assert.match(html, /Sign-in is unavailable/);
-  assert.match(html, /disabled="" class="login-google-btn"/);
+  assert.match(html, /Google sign-in is not enabled/);
+  assert.doesNotMatch(html, /disabled="" class="login-google-btn"/);
 });
 
 test('public home offers an in-app route to sign in without exposing the workspace', () => {

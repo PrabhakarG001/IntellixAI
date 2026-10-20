@@ -1,3 +1,5 @@
+import { defaultFirebaseConfig } from '../config/firebasePublicConfig.js';
+
 const fields = {
   apiKey: 'VITE_FIREBASE_API_KEY',
   authDomain: 'VITE_FIREBASE_AUTH_DOMAIN',
@@ -9,6 +11,11 @@ const fields = {
 };
 
 export function createFirebaseConfig(env = {}) {
+  // An explicit override must describe one complete project. Never fill a
+  // partially configured environment with identifiers from the default project.
+  if (!Object.values(fields).some(variable => Object.hasOwn(env, variable))) {
+    return { ...defaultFirebaseConfig };
+  }
   const config = {};
   for (const [field, variable] of Object.entries(fields)) {
     const value = typeof env[variable] === 'string' ? env[variable].trim() : '';

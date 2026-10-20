@@ -1,14 +1,29 @@
 # Firebase sign-in deployment
 
 The production sign-in unavailable message means Firebase could not initialize.
-An unauthorized domain or OAuth callback failure happens later, after sign-in starts;
-changing callback URLs cannot supply missing build variables.
+On October 20, 2026, inspection of the deployed JavaScript confirmed its Vite
+environment contained no Firebase settings. Local ignored environment files did
+contain them. This prevented initialization before any Google sign-in request.
+An unauthorized domain or OAuth callback failure happens later; changing callback
+URLs cannot supply missing build variables.
 
-## Required Vercel settings
+## Default project and optional environment overrides
 
-In the Vercel project serving `intellix-ai-six.vercel.app`, open **Settings >
-Environment Variables** and add the following for **Production**, and **Preview**
-if previews should support sign-in:
+`Frontend/src/config/firebasePublicConfig.js` contains the four public browser
+identifiers for the existing `intellixai-3aaaf` project. Firebase's public API
+confirmed the browser key belongs to this project and Google sign-in produces a
+Google authorization URL. These identifiers are intentionally shipped to browsers;
+they are not Firebase Admin credentials and do not authorize access to chat data.
+Backend ID-token verification remains required on every chat endpoint.
+
+When no `VITE_FIREBASE_*` variables are set, local and production builds use this
+default. The fix therefore does not require adding Firebase variables to Vercel.
+Deploy the new commit: existing JavaScript bundles cannot change retroactively.
+
+To explicitly use another web app or project, set all four variables below in
+Vercel **Settings > Environment Variables** for the target environment, or in
+ignored `Frontend/.env.local` for local development. Partial, empty, or placeholder
+overrides fail validation; identifiers from different projects are never merged.
 
 | Variable | Source in Firebase Console |
 | --- | --- |
@@ -17,16 +32,16 @@ if previews should support sign-in:
 | `VITE_FIREBASE_PROJECT_ID` | Same web app's `projectId` |
 | `VITE_FIREBASE_APP_ID` | Same web app's `appId` |
 
-Use the existing `intellixai-3aaaf` project and web app so accounts and sessions
-remain associated with the same provider. Do not create a replacement project.
-The frontend project must match the backend's `FIREBASE_PROJECT_ID`.
+Keep the existing `intellixai-3aaaf` project and web app so accounts and sessions
+remain associated with the same provider. If intentionally overriding the project,
+the frontend project must match the backend's `FIREBASE_PROJECT_ID`.
 Never substitute a Firebase Admin private key or AI provider credential here.
 
 Redeploy **after** saving the variables. Vite embeds them during the build;
 adding settings does not change an already deployed JavaScript bundle.
 Local `Frontend/.env.local` is ignored by Git and is not sent to Vercel.
-The build now rejects missing or placeholder configuration instead of publishing
-a page whose sign-in button can never work. No values are included in its error.
+The build rejects partial or placeholder overrides instead of publishing a page
+whose sign-in button can never work. No values are included in its error.
 
 Use the repository root as Vercel's Root Directory with the existing root
 `vercel.json`: it installs in `Frontend`, runs the root build script, and publishes
@@ -45,6 +60,8 @@ if sign-in reports a separate provider error after the build settings are fixed.
    `intellix-ai-six.vercel.app` and any custom or preview hostname actually used.
    Add `localhost` and `127.0.0.1` if local sign-in testing is required.
    Enter hostnames, without schemes, ports, or paths.
+   The public configuration checked on October 20, 2026 did not include
+   `localhost` or `127.0.0.1`: add these manually before testing local Google login.
 3. For the Google OAuth web client used by Firebase, ensure its authorized redirect
    URIs include `https://intellixai-3aaaf.firebaseapp.com/__/auth/handler` when using
    that default `authDomain`. Use the exact configured auth domain's handler if
@@ -53,6 +70,19 @@ if sign-in reports a separate provider error after the build settings are fixed.
 4. Keep the Firebase-provided `authDomain`. Changing it to the Vercel hostname
    requires hosting/proxying Firebase's auth helper endpoints as described in
    Firebase's redirect guidance; a generic SPA rewrite does not provide them.
+   The current popup flow avoids redirect storage requirements unless the popup
+   is blocked. Test that fallback on the browsers you support before relying on
+   redirects with the Firebase auth domain on a separately hosted site.
+
+## Backend hosting
+
+The inspected production bundle uses `https://intellixai.onrender.com/api`, while
+local configuration uses `http://localhost:5000/api`. Vercel serves the frontend
+only; its `/api/chats` returning 404 is not evidence about the Render backend.
+Keep `VITE_API_BASE_URL` set to the deployed backend, and configure Render's
+`FIREBASE_PROJECT_ID=intellixai-3aaaf` and
+`CLIENT_ORIGIN=https://intellix-ai-six.vercel.app` (plus any other allowed origins).
+Do not put server credentials in `VITE_*` variables.
 
 ## Verification
 
@@ -62,6 +92,8 @@ session persistence, then log out and confirm private workspace routes redirect
 to `/login`. A cancelled popup must leave the user signed out and permit retry.
 The existing back arrow is on `/login` at every viewport size, including during
 session loading. The public welcome page intentionally has no back control.
+Google sign-in also creates the Firebase user on first successful sign-in; there
+is no separate email/password registration flow in this application.
 
 References: [Vite build variables](https://vite.dev/guide/env-and-mode),
 [Firebase Google sign-in](https://firebase.google.com/docs/auth/web/google-signin),
