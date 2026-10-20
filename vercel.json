@@ -1,7 +1,7 @@
 {
   "framework": "vite",
-  "installCommand": "cd Frontend && npm ci",
-  "buildCommand": "npm run build",
+  "installCommand": "cd Frontend && env -u npm_config_cache_dir -u NPM_CONFIG_CACHE_DIR npm ci",
+  "buildCommand": "env -u npm_config_cache_dir -u NPM_CONFIG_CACHE_DIR npm run build",
   "outputDirectory": "Frontend/dist",
   "rewrites": [{ "source": "/login", "destination": "/index.html" }]
 }
