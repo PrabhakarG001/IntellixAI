@@ -62,6 +62,14 @@ function ChatArea({
           </h2>
 
           <div className="chat-input-wrapper-empty">
+            {error ? (
+              <div className="chat-error-container" role="alert">
+                <span className="chat-error-text-wrapper">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span className="chat-error-text">{error}</span>
+                </span>
+              </div>
+            ) : null}
             <div className="flex justify-end mb-2"><AiModeSelector selectedMode={selectedMode} onSelectionChange={onSelectionChange} /></div>
             <InputBox
               value={draft}
@@ -106,7 +114,7 @@ function ChatArea({
 
 
           {error ? (
-            <div className="chat-error-container">
+            <div className="chat-error-container" role="alert">
               <span className="chat-error-text-wrapper">
                 <AlertCircle size={16} className="shrink-0" />
                 <span className="chat-error-text">{error}</span>

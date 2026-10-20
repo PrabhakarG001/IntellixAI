@@ -1,19 +1,4 @@
-/* Custom Cursor Global Rules */
-@media (pointer: fine) {
-  *,
-  *::before,
-  *::after,
-  html,
-  body,
-  button,
-  a,
-  input,
-  textarea,
-  select,
-  [role="button"] {
-    cursor: none !important;
-  }
-}
+/* The decorative cursor supplements the native pointer; it must never hide it. */
 
 /* Custom Cursor Root Container */
 .custom-cursor-container {
@@ -35,8 +20,8 @@
   margin-top: -2px;
   margin-left: -2px;
   pointer-events: none;
-  transition: transform 0ms linear, scale 180ms ease, opacity 180ms ease;
-  will-change: transform;
+  transition: translate 0ms linear, scale 180ms ease, opacity 180ms ease;
+  will-change: translate;
   filter: drop-shadow(0 2px 8px rgba(168, 85, 247, 0.4));
 }
 
@@ -67,8 +52,8 @@
   background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, rgba(168, 85, 247, 0) 70%);
   box-shadow: 0 0 16px rgba(168, 85, 247, 0.35);
   pointer-events: none;
-  transition: transform 0ms linear, width 220ms ease, height 220ms ease, margin 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
-  will-change: transform;
+  transition: translate 0ms linear, scale 180ms ease, width 220ms ease, height 220ms ease, margin 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+  will-change: translate;
   backdrop-filter: blur(1px);
 }
 
@@ -118,13 +103,13 @@
 
 /* Active Click State */
 .cursor-active .custom-cursor-follower {
-  transform: scale(0.75) !important;
+  scale: 0.75;
   border-color: #d8b4fe;
   box-shadow: 0 0 30px rgba(192, 132, 252, 0.9);
 }
 
 .cursor-active .custom-cursor-pointer {
-  transform: scale(0.85) !important;
+  scale: 0.85;
 }
 
 /* Loading State Spinner Orbit */
@@ -137,9 +122,9 @@
 
 @keyframes cursor-spin {
   0% {
-    transform: rotate(0deg);
+    rotate: 0deg;
   }
   100% {
-    transform: rotate(360deg);
+    rotate: 360deg;
   }
 }

@@ -29,6 +29,12 @@ export async function consumeSse(body, handlers = {}) {
     let payload;
     try { payload = JSON.parse(event); }
     catch { throw new Error('The backend returned malformed stream data.'); }
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload) || typeof payload.type !== 'string') {
+      throw new Error('The backend returned malformed stream data.');
+    }
+    if (['content', 'thought', 'status', 'error'].includes(payload.type) && typeof payload.content !== 'string') {
+      throw new Error('The backend returned malformed stream data.');
+    }
     if (payload.type === 'error') throw new Error(payload.content || 'Generation failed.');
     if (payload.type === 'status') handlers.onStatus?.(payload.content || '');
     if (payload.type === 'thought') handlers.onThought?.(payload.content || '');

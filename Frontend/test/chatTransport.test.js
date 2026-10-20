@@ -82,3 +82,9 @@ test('SSE bounds total event size across multiple data lines', async () => {
   const text = `data: ${'x'.repeat(1_000_001)}\ndata: ${'x'.repeat(1_000_001)}\n\n`;
   await assert.rejects(consumeSse(new Response(text).body), /size limit/);
 });
+
+test('null, array and invalid content events never reach message state', async () => {
+  for (const payload of [null, [], {}, { type: 'content', content: null }, { type: 'thought', content: {} }]) {
+    await assert.rejects(consumeSse(stream(`data: ${JSON.stringify(payload)}\n\n`)), /malformed stream data/);
+  }
+});

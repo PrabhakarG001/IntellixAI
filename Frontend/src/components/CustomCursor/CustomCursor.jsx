@@ -18,12 +18,12 @@ export default function CustomCursor({ isLoading = false }) {
     if (isTouchDevice) return;
 
     const handleMouseMove = (e) => {
-      if (!isVisible) setIsVisible(true);
+      setIsVisible(true);
       posRef.current = { x: e.clientX, y: e.clientY };
       setPosition({ x: e.clientX, y: e.clientY });
 
       const target = e.target;
-      if (!target) return;
+      if (!(target instanceof Element)) return;
 
       const isClickable =
         target.closest("button") ||
@@ -58,14 +58,18 @@ export default function CustomCursor({ isLoading = false }) {
 
     const handleMouseDown = () => setIsMouseDown(true);
     const handleMouseUp = () => setIsMouseDown(false);
-    const handleMouseLeave = () => setIsVisible(false);
-    const handleMouseEnter = () => setIsVisible(true);
+    const handleMouseLeave = () => { setIsVisible(false); setIsMouseDown(false); };
+    // Wait for coordinates before showing the decoration after re-entry.
+    const handleMouseEnter = (e) => {
+      if (typeof e.clientX === "number") handleMouseMove(e);
+    };
 
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mouseup", handleMouseUp);
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
+    window.addEventListener("blur", handleMouseLeave);
 
     // Smooth LERP follower animation loop
     const updateFollower = () => {
@@ -82,9 +86,10 @@ export default function CustomCursor({ isLoading = false }) {
       window.removeEventListener("mouseup", handleMouseUp);
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
+      window.removeEventListener("blur", handleMouseLeave);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isVisible]);
+  }, []);
 
   if (!isVisible) return null;
 
@@ -103,7 +108,7 @@ export default function CustomCursor({ isLoading = false }) {
       <div
         className="custom-cursor-follower"
         style={{
-          transform: `translate3d(${followerPos.x}px, ${followerPos.y}px, 0)`,
+          translate: `${followerPos.x}px ${followerPos.y}px`,
         }}
       />
 
@@ -111,7 +116,7 @@ export default function CustomCursor({ isLoading = false }) {
       <div
         className="custom-cursor-pointer"
         style={{
-          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+          translate: `${position.x}px ${position.y}px`,
         }}
       >
         {cursorType === "text" ? (

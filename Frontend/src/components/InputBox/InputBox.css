@@ -98,6 +98,8 @@
 }
 
 .input-box-textarea {
+  cursor: text;
+  caret-color: currentColor;
   max-height: 112px;
   min-height: 44px;
   width: 100%;

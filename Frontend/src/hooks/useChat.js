@@ -26,6 +26,10 @@ export function useChat({ user, selectedMode }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const abortRef = useRef(null);
+  const revisionRef = useRef(0);
+  const loadRequestRef = useRef(0);
+  const selectionRef = useRef(0);
+  const createRequestRef = useRef(null);
   const userRef = useRef(user?.uid);
   userRef.current = user?.uid;
 
@@ -38,9 +42,12 @@ export function useChat({ user, selectedMode }) {
 
   const loadChats = useCallback(async () => {
     const owner = userRef.current;
+    const revision = revisionRef.current;
+    const request = ++loadRequestRef.current;
+    const current = () => owner === userRef.current && revision === revisionRef.current && request === loadRequestRef.current;
     try {
       const payload = await fetchChats();
-      if (owner !== userRef.current || abortRef.current) return;
+      if (!current() || abortRef.current) return;
       const loadedChats = payload.chats?.length
         ? normalizeChats(payload.chats)
         : fallbackChats;
@@ -52,12 +59,13 @@ export function useChat({ user, selectedMode }) {
       );
       setError("");
     } catch (loadError) {
-      if (owner !== userRef.current) return;
+      if (!current()) return;
       setError(loadError.message);
     }
   }, []);
 
   useEffect(() => {
+    revisionRef.current++;
     abortRef.current?.abort();
     abortRef.current = null;
     setIsGenerating(false);
@@ -73,26 +81,37 @@ export function useChat({ user, selectedMode }) {
     return () => abortRef.current?.abort();
   }, [user?.uid, loadChats]);
 
-  const startNewChat = useCallback(async () => {
+  const startNewChat = useCallback(() => {
     const owner = userRef.current;
-    try {
-      const payload = await createChat();
-      if (owner !== userRef.current) return null;
-      const chat = normalizeChat(payload.chat);
-      setChats((current) => [chat, ...current]);
-      setActiveChatId(chat.id);
-      setError("");
-      return chat;
-    } catch (createError) {
-      if (owner !== userRef.current) return null;
-      setError(createError.message);
-      return null;
-    }
+    if (!owner) return Promise.resolve(null);
+    if (createRequestRef.current?.owner === owner) return createRequestRef.current.promise;
+    revisionRef.current++;
+    const request = { owner };
+    request.promise = (async () => {
+      try {
+        const payload = await createChat();
+        if (owner !== userRef.current) return null;
+        const chat = normalizeChat(payload.chat);
+        setChats((current) => [chat, ...current]);
+        setActiveChatId(chat.id);
+        setError("");
+        return chat;
+      } catch (createError) {
+        if (owner !== userRef.current) return null;
+        setError(createError.message);
+        return null;
+      } finally {
+        if (createRequestRef.current === request) createRequestRef.current = null;
+      }
+    })();
+    createRequestRef.current = request;
+    return request.promise;
   }, []);
 
   const removeChat = useCallback(
     async (chatId) => {
       if (abortRef.current) return;
+      revisionRef.current++;
       const owner = userRef.current;
       const removedChat = chats.find(chat => chat.id === chatId) || null;
       const nextChats = chats.filter(chat => chat.id !== chatId);
@@ -125,12 +144,18 @@ export function useChat({ user, selectedMode }) {
 
   const clearChat = useCallback(async () => {
     if (!activeChat || abortRef.current) return;
+    if (activeChat.id === fallbackChats[0].id) return;
+    const owner = userRef.current;
+    const revision = ++revisionRef.current;
+    const current = () => owner === userRef.current && revision === revisionRef.current;
 
     try {
       const payload = await clearChatById(activeChat.id);
+      if (!current()) return;
       upsertChat(normalizeChat(payload.chat));
       setError("");
     } catch (clearError) {
+      if (!current()) return;
       setError(clearError.message);
     }
   }, [activeChat]);
@@ -183,16 +208,20 @@ export function useChat({ user, selectedMode }) {
   const selectChat = useCallback(
     async (chatId) => {
       setActiveChatId(chatId);
+      const selection = ++selectionRef.current;
+      if (chatId === fallbackChats[0].id) return;
       if (abortRef.current) return;
       const owner = userRef.current;
+      const revision = revisionRef.current;
+      const current = () => owner === userRef.current && revision === revisionRef.current && selection === selectionRef.current;
 
       try {
         const payload = await fetchChatById(chatId);
-        if (owner !== userRef.current || abortRef.current) return;
+        if (!current() || abortRef.current) return;
         upsertChat(normalizeChat(payload.chat));
         setError("");
       } catch (selectError) {
-        if (owner !== userRef.current) return;
+        if (!current()) return;
         setError(selectError.message);
       }
     },
@@ -224,6 +253,7 @@ export function useChat({ user, selectedMode }) {
       };
 
       abortRef.current = controller;
+      revisionRef.current++;
       setIsGenerating(true);
       setError("");
       
