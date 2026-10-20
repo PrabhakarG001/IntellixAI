@@ -6,6 +6,7 @@ import {
   saveConversation,
   classifyPayload,
   requireVisibleContent,
+  collectReasoningDetails,
 } from "../services/chatService.js";
 import { AppError, reportError } from "../utils/errors.js";
 
@@ -123,7 +124,9 @@ export const handleChatStream = async (req, res) => {
     heartbeat = setInterval(() => { if (!res.destroyed) res.write(': keep-alive\n\n'); }, 15000);
     sendSse(res, { type: 'meta', chatId: request.chatId, model: request.model });
     let content = '', thought = '';
+    const reasoning_details = [];
     for await (const chunk of stream) {
+      collectReasoningDetails(reasoning_details, chunk);
       if (controller.signal.aborted) return;
       for (const token of classifyPayload(chunk)) {
         if (token.type === 'content') content += token.content;
@@ -134,7 +137,7 @@ export const handleChatStream = async (req, res) => {
     }
     requireVisibleContent(content);
     if (controller.signal.aborted) return;
-    const chat = await saveConversation(request, { content, thought }, req.user.uid);
+    const chat = await saveConversation(request, { content, thought, reasoning_details }, req.user.uid);
     sendSse(res, { type: 'done', chat: chat.toClient() });
     res.end();
   } catch (error) {

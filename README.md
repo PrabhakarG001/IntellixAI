@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Node.js-22.12%2B-43853D?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js 22.12 or newer" />
   <img src="https://img.shields.io/badge/Express-5-333333?style=flat-square&amp;logo=express&amp;logoColor=white" alt="Express 5" />
-  <img src="https://img.shields.io/badge/AI-MiniMax_M3-7952B3?style=flat-square" alt="MiniMax M3 integration" />
+  <img src="https://img.shields.io/badge/AI-MiniMax_M3.1_Flash-7952B3?style=flat-square" alt="MiniMax M3.1 Flash via OpenRouter" />
 
   <p><a href="#engineering-highlights">Engineering</a> · <a href="#architecture">Architecture</a> · <a href="#quick-start">Quick start</a> · <a href="https://github.com/PrabhakarG001/IntellixAI">Repository</a></p>
 </div>
@@ -28,7 +28,7 @@ The engineering work spans the full request lifecycle: React state and cancellat
 | --- | --- |
 | Streaming lifecycle | The shared SSE decoder handles upstream and frontend events, including fragmented UTF-8, CRLF boundaries, usage events, and completion detection. Client cancellation propagates to the provider. |
 | Authentication and isolation | Firebase ID-token verification protects chat routes; records are scoped to the signed-in user. |
-| Provider boundary | One backend service calls the official MiniMax M3 HTTP API directly. Credentials stay server-side; the server fixes the model and endpoint. |
+| Provider boundary | One backend service calls OpenRouter for MiniMax M3.1 Flash free. Credentials stay server-side; the server fixes the model and endpoint. |
 | Failure handling | Input limits, safe error categories, a two-minute provider timeout, and one retry for pre-stream transient failures. No provider fallback or fake answers. |
 | State consistency | A synchronous frontend submission guard and per-process backend locks prevent concurrent generation on the same thread. Regeneration replaces the last exchange. |
 | Testability | Node's test runner exercises service behavior, stream parsing, and real local HTTP integration with mocked provider responses. |
@@ -38,7 +38,7 @@ The engineering work spans the full request lifecycle: React state and cancellat
 | Capability | What is implemented |
 | --- | --- |
 | Live conversations | Stream answers, stop generation, and regenerate the latest response. |
-| Task modes | Talk, Coding, and Reasoning share the same MiniMax M3 model. |
+| Task modes | Talk, Coding, and Reasoning share MiniMax M3.1 Flash free through OpenRouter. |
 | Personal history | Create, search, clear, and delete chats with automatic titles. Pinning and renaming are local UI state and reset on reload. |
 | Readable answers | Markdown, code blocks, tables, task lists, and response/code copying. |
 | Sign-in | Google login through Firebase Authentication. |
@@ -53,7 +53,7 @@ The engineering work spans the full request lifecycle: React state and cancellat
 | UI and rendering | Framer Motion, OGL, Lucide React, React Markdown, remark-gfm |
 | Backend | Node.js, Express 5, JavaScript ES modules, native `fetch` |
 | Authentication | Firebase Web SDK and Firebase Admin SDK |
-| AI integration | Official MiniMax HTTP API through native `fetch`, fixed to `MiniMax-M3` |
+| AI integration | OpenRouter Chat Completions through native JavaScript `fetch`, fixed to `minimax/minimax-m3.1-flash:free` |
 | Database and storage | MongoDB through Mongoose 9; optional process-memory storage |
 | Development and hosting | npm, Node.js test runner; Vercel configuration for the frontend build only |
 
@@ -65,11 +65,11 @@ flowchart LR
     R <-->|Sign-in and ID token| F[Firebase Authentication]
     subgraph B[Backend boundary: provider credential stays here]
         E[Express API and token verification] --> S[MiniMax service]
-        K[MINIMAX_API_KEY in server environment] -.-> S
+        K[OPENROUTER_API_KEY in server environment] -.-> S
         E <--> T[User-scoped thread storage]
     end
     R -->|Firebase token and chat data| E
-    S -->|HTTPS request| M[MiniMax M3]
+    S -->|HTTPS request through OpenRouter| M[MiniMax M3.1 Flash free]
     M -->|Streamed response| S
     S -->|Content, reasoning, usage| E
     E -->|SSE events| R
@@ -114,7 +114,7 @@ vercel.json              Frontend build configuration
 ### Prerequisites
 
 - Node.js **22.12 or newer**, npm, and Git. Vite 7 requires at least Node 22.12 on the 22.x line.
-- A direct MiniMax API key with MiniMax-M3 access and available quota.
+- An OpenRouter API key with access to `minimax/minimax-m3.1-flash:free` and available request quota.
 - A Firebase project with Google sign-in enabled and frontend domains authorized.
 - MongoDB only if persistent history is required.
 
@@ -142,7 +142,7 @@ VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
 VITE_FIREBASE_APP_ID=your_firebase_app_id
 ```
 
-These Firebase web settings are public browser configuration, not backend credentials. Never put `MINIMAX_API_KEY` in a frontend environment file. Enable Google sign-in and authorize the app's hostname in the matching Firebase project.
+These Firebase web settings are public browser configuration, not backend credentials. Never put `OPENROUTER_API_KEY` in a frontend environment file. Enable Google sign-in and authorize the app's hostname in the matching Firebase project.
 
 For hosted builds (including Vercel), add the four `VITE_FIREBASE_*` variables above in the hosting project's environment settings for each deployed environment (Production and/or Preview). Local `.env.local` files are ignored by Git and are not uploaded. Vite embeds these values at build time: redeploy after saving them, or restart Vite after changing local settings. Missing configuration displays a sign-in unavailable message and disables login; it does not allow unauthenticated access. See [Vite environment variables](https://vite.dev/guide/env-and-mode).
 
@@ -151,7 +151,9 @@ For hosted builds (including Vercel), add the four `VITE_FIREBASE_*` variables a
 Create `backend/.env` if it does not exist, then edit it locally. Preserve existing environment files.
 
 ```dotenv
-MINIMAX_API_KEY=your_minimax_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+# Optional attribution header:
+# OPENROUTER_SITE_URL=https://intellix-ai-six.vercel.app
 PORT=5000
 CLIENT_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
 FIREBASE_PROJECT_ID=your_firebase_project_id
@@ -161,7 +163,8 @@ FIREBASE_PROJECT_ID=your_firebase_project_id
 
 | Variable | Purpose |
 | --- | --- |
-| `MINIMAX_API_KEY` | Backend-only direct MiniMax credential; the only active AI credential. |
+| `OPENROUTER_API_KEY` | Backend-only OpenRouter credential; the only active AI credential. |
+| `OPENROUTER_SITE_URL` | Optional public site URL for OpenRouter attribution. |
 | `PORT` | Backend port; defaults to `5000`. |
 | `CLIENT_ORIGIN` | Comma-separated frontend origin allowlist; defaults to the local origins above. |
 | `FIREBASE_PROJECT_ID` | Firebase project for token verification; omission uses the existing project default. |
@@ -177,14 +180,14 @@ VITE_API_BASE_URL=https://your-backend.example/api
 The backend fixes the model and endpoint in `backend/services/minimaxService.js`; no model environment variable is needed:
 
 ```text
-Model:    MiniMax-M3
-Endpoint: POST https://api.minimax.io/v1/chat/completions
-Auth:     Authorization: Bearer <MINIMAX_API_KEY>
+Model:    minimax/minimax-m3.1-flash:free
+Endpoint: POST https://openrouter.ai/api/v1/chat/completions
+Auth:     Authorization: Bearer <OPENROUTER_API_KEY>
 ```
 
-The model and endpoint are verified against MiniMax's [invocation guide](https://platform.minimax.io/docs/guides/text-generation) and [HTTP compatibility reference](https://platform.minimax.io/docs/api-reference/text-openai-api). Requests use bearer authentication, `stream_options.include_usage`, `reasoning_split: true`, and `max_completion_tokens: 8192`. Talk and Coding use `thinking.type: disabled`; Reasoning uses `adaptive`. Stored assistant reasoning is returned as `reasoning_content` in the next request. There are no gateway SDKs, alternate models, or provider fallbacks.
+The model is listed in [OpenRouter's catalog](https://openrouter.ai/minimax/minimax-m3.1-flash:free). Requests use bearer authentication, `stream_options.include_usage`, and `max_tokens: 8192`. Talk and Coding request low reasoning effort; Reasoning requests high effort. Thinking is never disabled for this model. OpenRouter `reasoning_details` are preserved server-side and returned with assistant history on subsequent requests. There are no added SDK dependencies or alternate-model fallbacks; the backend never silently switches to a paid model. Free-model availability and rate limits can change.
 
-Only `MINIMAX_API_KEY` is read for AI authentication. Existing local environment files are preserved; remove unused legacy entries when editing them locally.
+Only `OPENROUTER_API_KEY` is read for AI authentication. Existing local environment files are preserved. A direct MiniMax key cannot authenticate to OpenRouter. Set a valid OpenRouter key locally and on Render, then restart or redeploy the backend. A provider-side "User not found" error means that OpenRouter rejected its credential/account; it does not mean the Firebase user needs a duplicate database record.
 
 ### Start the application
 
@@ -231,7 +234,7 @@ npm run check:api
 
 The result separates key presence from authentication and inference; the latter remain `not_checked` until a live request succeeds. Backend liveness is checked independently with `GET /`. No public endpoint exposes provider configuration or performs diagnostic inference.
 
-To check the real MiniMax account, run from the root:
+To check the real OpenRouter credential and MiniMax inference, run from the root:
 
 ```sh
 cd backend
@@ -243,7 +246,7 @@ The live check sends a small, potentially billable request when a key exists. Mi
 <details>
 <summary><strong>API reference</strong></summary>
 
-All `/api` routes require `Authorization: Bearer <FIREBASE_ID_TOKEN>`. This is a Firebase session token, not the MiniMax key.
+All `/api` routes require `Authorization: Bearer <FIREBASE_ID_TOKEN>`. This is a Firebase session token, separate from the server's OpenRouter key.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
@@ -287,11 +290,11 @@ Dependency audit on October 18, 2026: the backend has no reported advisories; th
 | Symptom | Check |
 | --- | --- |
 | `MINIMAX_NOT_CONFIGURED` / 503 | Set the backend key and restart Express. |
-| `MINIMAX_AUTH` / 502 | Verify the direct MiniMax key and account access. |
-| `MINIMAX_MODEL` / 502 | Check account access to MiniMax-M3. |
+| `MINIMAX_AUTH` / 502 | Verify the backend `OPENROUTER_API_KEY` and OpenRouter account. |
+| `MINIMAX_MODEL` / 502 | Check availability of `minimax/minimax-m3.1-flash:free` and routing settings. |
 | `MINIMAX_ACCESS` / 502 | Check account permissions. |
 | `MINIMAX_REQUEST` / 502 | Check input and parameter limits. |
-| `MINIMAX_QUOTA` / 503 | Check MiniMax balance and quota. |
+| `MINIMAX_QUOTA` / 503 | Check OpenRouter credits and quota. |
 | HTTP 429 | Wait for the provider rate limit to clear. |
 | HTTP 401 | Sign in again; verify both Firebase project configurations. |
 | Sign-in unavailable / missing `VITE_FIREBASE_*` | Set all four required frontend Firebase settings in `.env.local` or the hosting build environment, then restart or rebuild and redeploy. Setting them only in `backend/.env` has no effect on Vite. |
@@ -302,13 +305,13 @@ Dependency audit on October 18, 2026: the backend has no reported advisories; th
 | History disappears | Configure MongoDB; process-memory history resets on restart. |
 | MongoDB startup failure | Verify the URI, database availability, and network permissions. |
 
-Errors after streaming starts arrive as SSE `error` events. MiniMax's [error reference](https://platform.minimax.io/docs/api-reference/errorcode) covers provider-side diagnostics.
+Errors after streaming starts arrive as SSE `error` events. OpenRouter's [error reference](https://openrouter.ai/docs/api/reference/errors-and-debugging) covers provider-side diagnostics. Existing `MINIMAX_*` application error codes remain stable for compatibility.
 
 </details>
 
 ## Security
 
-- Keep provider keys and database credentials on the backend. Never use `VITE_MINIMAX_API_KEY` or `NEXT_PUBLIC_MINIMAX_API_KEY`.
+- Keep provider keys and database credentials on the backend. Never use `VITE_OPENROUTER_API_KEY` or `NEXT_PUBLIC_OPENROUTER_API_KEY`.
 - Vite environment variables are public build-time configuration. Use them only for values safe to expose.
 - `.gitignore` excludes local environment files, dependencies, build outputs, caches, and private credential exports while allowing `.env.example` files. Review staged files before committing.
 - Previously committed credentials must be revoked and rotated. Ignore rules protect future commits; they do not remove secrets from Git history.

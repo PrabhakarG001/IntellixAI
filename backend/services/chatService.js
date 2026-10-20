@@ -11,8 +11,8 @@ export async function buildChatRequest(body = {}, userId) {
   if (message.length > 32_000) invalid('Message exceeds 32000 characters.');
   const mode = body.mode || body.selectedMode || 'talk';
   if (!['talk', 'coding', 'reasoning'].includes(mode)) invalid('Invalid chat mode.');
-  if (body.model !== undefined && body.model !== MINIMAX_MODEL) invalid('Only MiniMax-M3 is supported.');
-  if (body.provider !== undefined && body.provider !== 'minimax') invalid('Only MiniMax is supported.');
+  if (body.model !== undefined && body.model !== MINIMAX_MODEL) invalid('Only MiniMax M3.1 Flash free is supported.');
+  if (body.provider !== undefined && body.provider !== 'openrouter') invalid('Only OpenRouter is supported.');
   if (body.chatId !== undefined && (typeof body.chatId !== 'string' || !/^[\w-]{1,100}$/.test(body.chatId))) invalid('Invalid chat ID.');
   if (body.regenerate !== undefined && typeof body.regenerate !== 'boolean') invalid('Invalid regenerate flag.');
   if (body.thinkingMode !== undefined && !['quick', 'deep'].includes(body.thinkingMode)) invalid('Invalid thinking mode.');
@@ -51,11 +51,17 @@ export function createModelStream(request, signal) {
 
 export function classifyPayload(chunk) {
   const delta = chunk.choices?.[0]?.delta || {};
-  const thought = delta.reasoning_content || '';
+  const thought = delta.reasoning || delta.reasoning_content || (Array.isArray(delta.reasoning_details)
+    ? delta.reasoning_details.map(detail => detail?.type === 'reasoning.text' ? detail.text || '' : '').join('') : '');
   return [
     ...(typeof thought === 'string' && thought ? [{ type: 'thought', content: thought }] : []),
     ...(typeof delta.content === 'string' ? [{ type: 'content', content: delta.content }] : []),
   ];
+}
+
+export function collectReasoningDetails(target, chunk) {
+  const details = chunk.choices?.[0]?.delta?.reasoning_details;
+  if (Array.isArray(details)) target.push(...structuredClone(details));
 }
 
 export function requireVisibleContent(content) {
@@ -65,19 +71,23 @@ export function requireVisibleContent(content) {
 export async function generateCompleteResponse(request, signal) {
   const stream = await createModelStream(request, signal);
   let content = '', thought = '';
+  const reasoning_details = [];
   for await (const chunk of stream) {
+    collectReasoningDetails(reasoning_details, chunk);
     for (const token of classifyPayload(chunk)) {
       if (token.type === 'thought') thought += token.content;
       else content += token.content;
     }
   }
   requireVisibleContent(content);
-  return { content, thought };
+  return { content, thought, reasoning_details };
 }
 
 export function saveConversation(request, assistant, userId) {
   return Thread.upsert({
     id: request.chatId, userId, title: titleFromMessages(request.messages),
-    messages: [...request.messages, { role: 'assistant', content: assistant.content, thought: assistant.thought }],
+    messages: [...request.messages, { role: 'assistant', content: assistant.content, thought: assistant.thought,
+      ...(assistant.reasoning_details?.length ? { reasoning_details: assistant.reasoning_details } : {}),
+    }],
   });
 }

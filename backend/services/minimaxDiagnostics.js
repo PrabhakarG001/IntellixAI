@@ -9,12 +9,12 @@ export async function inspectMinimax({ live = false, fetchImpl = globalThis.fetc
     inference: 'not_checked',
   };
   if (!result.keyConfigured) {
-    return { ...result, error: { code: 'MINIMAX_NOT_CONFIGURED', message: 'Set MINIMAX_API_KEY in the backend environment.' } };
+    return { ...result, error: { code: 'MINIMAX_NOT_CONFIGURED', message: 'Set OPENROUTER_API_KEY in the backend environment.' } };
   }
   if (!live) return result;
   try {
     const stream = await createMinimaxStream({
-      messages: [{ role: 'user', content: 'Reply with OK.' }], thinkingMode: 'quick', maxCompletionTokens: 32,
+      messages: [{ role: 'user', content: 'Reply with OK.' }], thinkingMode: 'quick', maxCompletionTokens: 2048,
     }, { fetchImpl });
     let content = '';
     for await (const chunk of stream) content += chunk.choices?.[0]?.delta?.content || '';

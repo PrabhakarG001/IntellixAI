@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { AI_MODES } from "../../config/aiConfig.js";
 
-// Task modes share the same MiniMax-M3 model.
+// Task modes share MiniMax M3.1 Flash free through OpenRouter.
 function AiModeSelector({
   selectedMode = "talk",
   onSelectionChange
@@ -106,7 +106,7 @@ function AiModeSelector({
             <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300/60 px-3 pt-1 pb-1">
               Model
             </div>
-            <div className="px-3 py-2 text-xs text-slate-300">MiniMax M3</div>
+            <div className="px-3 py-2 text-xs text-slate-300">MiniMax M3.1 Flash</div>
           </div>
         </div>
       )}

@@ -1,5 +1,8 @@
 # API and desktop cursor fixes
 
+For the current AI provider setup, see [OpenRouter MiniMax configuration](openrouter-minimax.md).
+The direct MiniMax diagnostic recorded below describes the earlier integration.
+
 ## Root causes
 
 The custom cursor stylesheet hid every native cursor on fine-pointer devices,
